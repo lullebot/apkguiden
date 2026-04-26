@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>apkguiden.se – Bäst alkohol per krona på Systembolaget</title>
+  <meta name="description" content="Topplista över Systembolagets sortiment, rangordnad efter alkohol per krona (APK). Uppdateras dagligen.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230F3D2E'/><text x='50' y='70' font-family='sans-serif' font-size='60' font-weight='800' text-anchor='middle' fill='%23F4D35E'>A</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================
+       FÄRGSYSTEM & GRUNDVARIABLER
+       ============================================ */
+    :root {
+      --green: #0F3D2E;
+      --green-dark: #0A2D22;
+      --green-light: #1A523F;
+      --yellow: #F4D35E;
+      --yellow-bright: #FFE066;
+      --cream: #F5EBC4;
+      --yellow-muted: #D9B842;
+      --max-width: 72rem;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background-color: var(--green);
+      color: var(--yellow);
+      font-family: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-feature-settings: 'ss01', 'ss02';
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    .num-tabular { font-variant-numeric: tabular-nums; }
+
+    /* ============================================
+       ANIMATIONER
+       ============================================ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
+
+    @keyframes shimmer {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .shimmer { animation: shimmer 2.5s ease-in-out infinite; }
+
+    /* ============================================
+       HEADER
+       ============================================ */
+    .top-nav {
+      background-color: var(--green-dark);
+      border-bottom: 1px solid rgba(244, 211, 94, 0.12);
+    }
+    .top-nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--yellow);
+    }
+    .logo-tld { color: var(--yellow-muted); }
+
+    .live-indicator {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cream);
+    }
+    @media (min-width: 768px) {
+      .live-indicator { display: flex; }
+    }
+    .live-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background-color: var(--yellow);
+    }
+
+    /* ============================================
+       HERO
+       ============================================ */
+    .hero {
+      border-bottom: 1px solid rgba(244, 211, 94, 0.08);
+    }
+    .hero-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
+    }
+    @media (min-width: 768px) {
+      .hero-inner { padding: 6rem 1.5rem; }
+    }
+    .hero-eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--yellow-muted);
+      margin-bottom: 1.5rem;
+    }
+    .hero-title {
+      font-size: clamp(2.5rem, 8vw, 6rem);
+      font-weight: 800;
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+      color: var(--yellow);
+      margin: 0;
+    }
+    .hero-subtitle {
+      margin-top: 2rem;
+      max-width: 36rem;
+      font-size: 1.125rem;
+      line-height: 1.6;
+      color: var(--cream);
+    }
+    @media (min-width: 768px) {
+      .hero-subtitle { font-size: 1.25rem; }
+    }
+    .hero-subtitle strong {
+      color: var(--yellow);
+      font-weight: 700;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 3rem;
+      max-width: 32rem;
+    }
+    @media (min-width: 768px) {
+      .stats { gap: 2rem; }
+    }
+    .stat-label {
+      font-size: 0.625rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--yellow-muted);
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+    @media (min-width: 768px) {
+      .stat-label { font-size: 0.75rem; }
+    }
+    .stat-value {
+      font-size: clamp(1.5rem, 4vw, 2.25rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: var(--yellow);
+    }
+    .stat-value.highlight { color: var(--yellow-bright); }
+    .stat-suffix {
+      font-size: 0.75rem;
+      margin-left: 0.375rem;
+      font-weight: 500;
+      color: var(--yellow-muted);
+    }
+    @media (min-width: 768px) {
+      .stat-suffix { font-size: 0.875rem; }
+    }
+
+    /* ============================================
+       KATEGORI-TABBAR (sticky)
+       ============================================ */
+    .tabs-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background-color: rgba(15, 61, 46, 0.93);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(244, 211, 94, 0.12);
+    }
+    .tabs {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      white-space: nowrap;
+      background: transparent;
+      color: var(--cream);
+      border: 1.5px solid rgba(244, 211, 94, 0.2);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .tab:hover {
+      border-color: var(--yellow);
+      color: var(--yellow);
+    }
+    .tab.active {
+      background-color: var(--yellow);
+      color: var(--green);
+      border-color: var(--yellow);
+      font-weight: 700;
+    }
+    .tab svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    /* ============================================
+       MAIN
+       ============================================ */
+    main {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .section-eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--yellow-muted);
+      margin-bottom: 0.5rem;
+    }
+    .section-title {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--yellow);
+      margin: 0;
+    }
+    @media (min-width: 768px) {
+      .section-title { font-size: 2.25rem; }
+    }
+    .sort-indicator {
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 500;
+      color: var(--cream);
+    }
+
+    /* ============================================
+       PODIUM (Topp 3)
+       ============================================ */
+    .podium {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (min-width: 768px) {
+      .podium {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+      }
+    }
+    .podium-card {
+      padding: 1.5rem;
+      border-radius: 1rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 220px;
+      background-color: var(--green-light);
+      border: 1.5px solid rgba(244, 211, 94, 0.24);
+      color: var(--yellow);
+      transition: all 0.3s ease;
+    }
+    .podium-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--yellow);
+    }
+    .podium-card.first {
+      background-color: var(--yellow);
+      color: var(--green);
+      border-color: var(--yellow);
+    }
+    .podium-rank {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .podium-rank-num {
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--yellow-muted);
+    }
+    .podium-card.first .podium-rank-num { color: var(--green); }
+    .podium-badge {
+      font-size: 0.625rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      background-color: var(--green);
+      color: var(--yellow);
+    }
+    .podium-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.01em;
+    }
+    .podium-meta {
+      font-size: 0.75rem;
+      opacity: 0.8;
+      margin-bottom: 1rem;
+    }
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .pill {
+      padding: 0.25rem 0.625rem;
+      border-radius: 9999px;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      background-color: rgba(244, 211, 94, 0.08);
+      color: var(--cream);
+      border: 1px solid rgba(244, 211, 94, 0.16);
+    }
+    .podium-card.first .pill {
+      background-color: rgba(15, 61, 46, 0.12);
+      color: var(--green);
+      border-color: rgba(15, 61, 46, 0.16);
+    }
+    .podium-footer {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(244, 211, 94, 0.16);
+      margin-top: auto;
+    }
+    .podium-card.first .podium-footer { border-color: rgba(15, 61, 46, 0.16); }
+    .podium-stat-label {
+      font-size: 0.625rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
+      opacity: 0.8;
+    }
+    .podium-price {
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+    .podium-price-suffix {
+      font-size: 0.75rem;
+      opacity: 0.7;
+      font-weight: 500;
+    }
+    .podium-apk {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      text-align: right;
+    }
+
+    /* ============================================
+       PRODUKTLISTA
+       ============================================ */
+    .product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .product-row {
+      display: grid;
+      grid-template-columns: 2.5rem 1fr auto auto;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      background-color: rgba(10, 45, 34, 0.6);
+      border: 1.5px solid rgba(244, 211, 94, 0.12);
+      transition: all 0.25s ease;
+    }
+    @media (min-width: 768px) {
+      .product-row {
+        grid-template-columns: 3rem 1fr 7rem 11rem;
+        gap: 1rem;
+        padding: 1.25rem;
+      }
+    }
+    .product-row:hover {
+      border-color: rgba(244, 211, 94, 0.4);
+      background-color: var(--green-light);
+    }
+    .product-rank {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--yellow-muted);
+      line-height: 1;
+    }
+    @media (min-width: 768px) {
+      .product-rank { font-size: 1.875rem; }
+    }
+    .product-info { min-width: 0; }
+    .product-name {
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      color: var(--yellow);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    @media (min-width: 768px) {
+      .product-name { font-size: 1.125rem; }
+    }
+    .product-meta {
+      font-size: 0.75rem;
+      margin-top: 0.125rem;
+      color: var(--cream);
+      opacity: 0.7;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .product-pills {
+      display: none;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      margin-top: 0.5rem;
+    }
+    @media (min-width: 768px) {
+      .product-pills { display: flex; }
+    }
+    .product-price-block { text-align: right; }
+    .product-stat-label {
+      font-size: 0.625rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--yellow-muted);
+      margin-bottom: 0.125rem;
+    }
+    .product-price {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--cream);
+    }
+    @media (min-width: 768px) {
+      .product-price { font-size: 1.125rem; }
+    }
+    .product-price-suffix {
+      font-size: 0.75rem;
+      margin-left: 0.125rem;
+      opacity: 0.7;
+      font-weight: 500;
+    }
+    .product-apk-block { text-align: right; }
+    .product-apk {
+      font-size: clamp(1.5rem, 4vw, 2.25rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: var(--yellow);
+    }
+    .product-apk-suffix {
+      font-size: 0.75rem;
+      margin-left: 0.25rem;
+      font-weight: 500;
+      color: var(--yellow-muted);
+    }
+
+    /* ============================================
+       INFO BOX & TILLSTÅND
+       ============================================ */
+    .info-box {
+      margin-top: 4rem;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      background-color: var(--green-light);
+      border: 1.5px solid rgba(244, 211, 94, 0.16);
+    }
+    @media (min-width: 768px) {
+      .info-box { padding: 2rem; }
+    }
+    .info-icon {
+      flex-shrink: 0;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--yellow);
+      color: var(--green);
+    }
+    .info-title {
+      font-weight: 700;
+      color: var(--yellow);
+      margin-bottom: 0.25rem;
+    }
+    .info-body {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--cream);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 5rem 0;
+      color: var(--cream);
+      font-size: 1.125rem;
+    }
+    .loading-spinner {
+      display: inline-block;
+      width: 2rem;
+      height: 2rem;
+      border: 3px solid rgba(244, 211, 94, 0.2);
+      border-top-color: var(--yellow);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .empty {
+      text-align: center;
+      padding: 5rem 0;
+      color: var(--cream);
+      font-size: 1.25rem;
+    }
+
+    /* ============================================
+       FOOTER
+       ============================================ */
+    footer {
+      background-color: var(--green-dark);
+      border-top: 1px solid rgba(244, 211, 94, 0.12);
+      margin-top: 2rem;
+    }
+    .footer-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      margin-bottom: 2.5rem;
+    }
+    @media (min-width: 768px) {
+      .footer-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .footer-col-title {
+      font-size: 0.625rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--yellow-bright);
+      margin-bottom: 0.75rem;
+    }
+    .footer-col-body {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--cream);
+    }
+    .footer-col-body a {
+      color: var(--yellow);
+      text-decoration: underline;
+      text-decoration-color: rgba(244, 211, 94, 0.3);
+      text-underline-offset: 3px;
+    }
+    .footer-col-body a:hover { text-decoration-color: var(--yellow); }
+    .footer-bottom {
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(244, 211, 94, 0.12);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--yellow-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP NAV -->
+  <header class="top-nav">
+    <div class="top-nav-inner">
+      <div class="logo">apkguiden<span class="logo-tld">.se</span></div>
+      <div class="live-indicator" id="liveIndicator">
+        <span class="live-dot shimmer"></span>
+        <span id="liveText">Laddar data…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow fade-up">Sveriges värdetopplista över alkohol</div>
+      <h1 class="hero-title fade-up" style="animation-delay: 0.05s">Bäst APK<br>just nu.</h1>
+      <p class="hero-subtitle fade-up" style="animation-delay: 0.15s">
+        APK = <strong>alkohol per krona</strong>. Vi rangordnar Systembolagets sortiment efter hur mycket ren alkohol du får för pengarna – mätt i milliliter per krona.
+      </p>
+      <div class="stats fade-up" style="animation-delay: 0.25s">
+        <div>
+          <div class="stat-label">Produkter</div>
+          <div class="stat-value num-tabular" id="statCount">–</div>
+        </div>
+        <div>
+          <div class="stat-label">Kategorier</div>
+          <div class="stat-value num-tabular">5</div>
+        </div>
+        <div>
+          <div class="stat-label">Bäst APK</div>
+          <div class="stat-value highlight num-tabular" id="statBest">–<span class="stat-suffix">ml/kr</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TABS (sticky) -->
+  <nav class="tabs-wrap">
+    <div class="tabs" id="tabs"></div>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+    <div class="section-header">
+      <div>
+        <div class="section-eyebrow">Topplista</div>
+        <h2 class="section-title" id="sectionTitle">Topp 20 totalt</h2>
+      </div>
+      <div class="sort-indicator">Sorterat efter APK ↓</div>
+    </div>
+
+    <div id="loading" class="loading">
+      <div class="loading-spinner"></div>
+      <div>Hämtar Systembolagets sortiment…</div>
+    </div>
+
+    <div class="podium" id="podium" style="display: none;"></div>
+    <div class="product-list" id="productList" style="display: none;"></div>
+    <div class="empty" id="empty" style="display: none;">Inga produkter i den här kategorin.</div>
+
+    <div class="info-box">
+      <div class="info-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+      </div>
+      <div>
+        <div class="info-title">Så räknar vi APK</div>
+        <div class="info-body">
+          APK = (volym i ml × alkoholhalt %) ÷ pris i kr. Resultatet visar hur många milliliter ren alkohol du får per krona. Högre värde = mer alkohol per krona.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-col-title">Om datan</div>
+          <div class="footer-col-body">
+            Produktdata baseras på Systembolagets sortiment. Priser och tillgänglighet kan ändras – kontrollera alltid på <a href="https://systembolaget.se" target="_blank" rel="noopener">systembolaget.se</a> innan köp.
+          </div>
+        </div>
+        <div>
+          <div class="footer-col-title">Källa</div>
+          <div class="footer-col-body">
+            Data hämtas från ett öppet GitHub-projekt som arkiverar Systembolagets sortiment dagligen. Senast uppdaterat: <span id="lastUpdated">–</span>.
+          </div>
+        </div>
+        <div>
+          <div class="footer-col-title">Drick ansvarsfullt</div>
+          <div class="footer-col-body">
+            Sajten är ett verktyg för prisjämförelse, inte en uppmaning att dricka mer. Alkohol kan skada dig och din omgivning. 18-årsgräns gäller.
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>apkguiden.se</div>
+        <div>Prototyp · v0.3</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================
+       JAVASCRIPT
+       ============================================ -->
+  <script>
+    // SVG-ikoner (Lucide)
+    const ICONS = {
+      trending: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>',
+      wine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"></path><path d="M7 10h10"></path><path d="M12 15v7"></path><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"></path></svg>',
+      beer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h1a3 3 0 0 1 0 6h-1"></path><path d="M9 12v6"></path><path d="M13 12v6"></path><path d="M14 7.5c-1 0-1.44.5-3 .5s-2-.5-3-.5-1.72.5-2.5.5a2.5 2.5 0 0 1 0-5c.78 0 1.57.5 2.5.5C9.44 3.5 10 3 12 3s2.56.5 3.5.5c.93 0 1.72-.5 2.5-.5a2.5 2.5 0 0 1 0 5c-.78 0-1.5-.5-2.5-.5Z"></path><path d="M5 8v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"></path></svg>',
+      droplets: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"></path><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"></path></svg>',
+      sparkles: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg>',
+      glass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 22H8.8a2 2 0 0 1-2-1.79L5 3h14l-1.81 17.21A2 2 0 0 1 15.2 22Z"></path><path d="M6 12a5 5 0 0 1 6 0 5 5 0 0 0 6 0"></path></svg>',
+    };
+
+    const CATEGORIES = [
+      { key: 'Alla', label: 'Allt', icon: 'trending' },
+      { key: 'Vin', label: 'Vin', icon: 'wine' },
+      { key: 'Öl', label: 'Öl', icon: 'beer' },
+      { key: 'Sprit', label: 'Sprit', icon: 'droplets' },
+      { key: 'Mousserande', label: 'Mousserande', icon: 'sparkles' },
+      { key: 'Cider & Blanddryck', label: 'Cider', icon: 'glass' },
+    ];
+
+    let allProducts = [];
+    let selectedCategory = 'Alla';
+    let dataMeta = { updated: null, count: 0 };
+
+    // ============================================
+    // INIT
+    // ============================================
+    async function init() {
+      renderTabs();
+      try {
+        const response = await fetch('data.json', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Kunde inte hämta data');
+        const data = await response.json();
+        allProducts = data.products || [];
+        dataMeta.updated = data.updated;
+        dataMeta.count = data.count || allProducts.length;
+        updateLiveIndicator();
+        updateLastUpdated();
+        render();
+      } catch (err) {
+        console.error('Datafel:', err);
+        document.getElementById('loading').innerHTML =
+          '<div style="font-size: 1rem; color: var(--cream);">Kunde inte ladda data. Försök igen senare.</div>';
+      }
+    }
+
+    // ============================================
+    // KATEGORI-TABBAR
+    // ============================================
+    function renderTabs() {
+      const tabsEl = document.getElementById('tabs');
+      tabsEl.innerHTML = CATEGORIES.map(cat => `
+        <button class="tab ${cat.key === selectedCategory ? 'active' : ''}" data-cat="${cat.key}">
+          ${ICONS[cat.icon]}
+          <span>${cat.label}</span>
+        </button>
+      `).join('');
+      tabsEl.querySelectorAll('.tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedCategory = btn.dataset.cat;
+          renderTabs();
+          render();
+          window.scrollTo({ top: document.querySelector('.tabs-wrap').offsetTop - 1, behavior: 'smooth' });
+        });
+      });
+    }
+
+    // ============================================
+    // TOPPLISTA
+    // ============================================
+    function render() {
+      const filtered = selectedCategory === 'Alla'
+        ? allProducts
+        : allProducts.filter(p => p.category === selectedCategory);
+      const top = filtered.slice(0, 20);
+
+      // Statistik
+      document.getElementById('statCount').textContent = formatNumber(dataMeta.count);
+      const bestApk = top[0]?.apk ?? 0;
+      document.getElementById('statBest').innerHTML =
+        `${bestApk.toFixed(2)}<span class="stat-suffix">ml/kr</span>`;
+
+      // Sektion-titel
+      const titleEl = document.getElementById('sectionTitle');
+      titleEl.textContent = selectedCategory === 'Alla'
+        ? `Topp ${top.length} totalt`
+        : `Topp ${top.length} – ${selectedCategory}`;
+
+      // Tomt tillstånd
+      document.getElementById('loading').style.display = 'none';
+      const emptyEl = document.getElementById('empty');
+      const podiumEl = document.getElementById('podium');
+      const listEl = document.getElementById('productList');
+
+      if (top.length === 0) {
+        emptyEl.style.display = 'block';
+        podiumEl.style.display = 'none';
+        listEl.style.display = 'none';
+        return;
+      }
+      emptyEl.style.display = 'none';
+
+      // Podium
+      const podium = top.slice(0, 3);
+      const rest = top.slice(3);
+      if (podium.length === 3) {
+        podiumEl.style.display = 'grid';
+        podiumEl.innerHTML = podium.map((p, i) => renderPodiumCard(p, i + 1, i)).join('');
+      } else {
+        podiumEl.style.display = 'none';
+      }
+
+      // Lista
+      if (rest.length > 0) {
+        listEl.style.display = 'flex';
+        listEl.innerHTML = rest.map((p, i) => renderProductRow(p, i + 4, i + 3)).join('');
+      } else if (podium.length < 3) {
+        // Färre än 3 produkter, visa allt som rader
+        listEl.style.display = 'flex';
+        listEl.innerHTML = top.map((p, i) => renderProductRow(p, i + 1, i)).join('');
+        podiumEl.style.display = 'none';
+      } else {
+        listEl.style.display = 'none';
+      }
+    }
+
+    function renderPodiumCard(p, rank, index) {
+      const isFirst = rank === 1;
+      const volumeText = p.volume >= 1000
+        ? `${(p.volume / 1000).toFixed(p.volume % 1000 === 0 ? 0 : 2)} L`
+        : `${p.volume} ml`;
+      return `
+        <div class="podium-card ${isFirst ? 'first' : ''} fade-up" style="animation-delay: ${index * 0.08}s">
+          <div class="podium-rank">
+            <div class="podium-rank-num">№ ${String(rank).padStart(2, '0')}</div>
+            ${isFirst ? '<div class="podium-badge">Bäst APK</div>' : ''}
+          </div>
+          <div style="flex: 1;">
+            <div class="podium-name">${escapeHtml(p.name)}</div>
+            <div class="podium-meta">${escapeHtml(p.producer || '')} ${p.country ? '· ' + escapeHtml(p.country) : ''}</div>
+            <div class="pills">
+              ${p.subcategory ? `<span class="pill">${escapeHtml(p.subcategory)}</span>` : ''}
+              <span class="pill">${p.alcohol}%</span>
+              <span class="pill">${volumeText}</span>
+            </div>
+          </div>
+          <div class="podium-footer">
+            <div>
+              <div class="podium-stat-label">Pris</div>
+              <div class="podium-price num-tabular">${formatPrice(p.price)} <span class="podium-price-suffix">kr</span></div>
+            </div>
+            <div style="text-align: right;">
+              <div class="podium-stat-label">APK</div>
+              <div class="podium-apk num-tabular">${p.apk.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderProductRow(p, rank, index) {
+      const volumeText = p.volume >= 1000
+        ? `${(p.volume / 1000).toFixed(p.volume % 1000 === 0 ? 0 : 2)} L`
+        : `${p.volume} ml`;
+      return `
+        <div class="product-row fade-up" style="animation-delay: ${Math.min(index * 0.04, 0.6)}s">
+          <div class="product-rank num-tabular">${String(rank).padStart(2, '0')}</div>
+          <div class="product-info">
+            <div class="product-name">${escapeHtml(p.name)}</div>
+            <div class="product-meta">${escapeHtml(p.producer || '')} ${p.subcategory ? '· ' + escapeHtml(p.subcategory) : ''}</div>
+            <div class="product-pills">
+              <span class="pill">${p.alcohol}%</span>
+              <span class="pill">${volumeText}</span>
+              ${p.packaging ? `<span class="pill">${escapeHtml(p.packaging)}</span>` : ''}
+            </div>
+          </div>
+          <div class="product-price-block">
+            <div class="product-stat-label">Pris</div>
+            <div class="product-price num-tabular">${formatPrice(p.price)}<span class="product-price-suffix">kr</span></div>
+          </div>
+          <div class="product-apk-block">
+            <div class="product-stat-label">APK</div>
+            <div class="product-apk num-tabular">${p.apk.toFixed(2)}<span class="product-apk-suffix">ml/kr</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ============================================
+    // HJÄLPFUNKTIONER
+    // ============================================
+    function formatNumber(n) {
+      return new Intl.NumberFormat('sv-SE').format(n);
+    }
+    function formatPrice(p) {
+      return p % 1 === 0 ? p.toString() : p.toFixed(2);
+    }
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+    function updateLiveIndicator() {
+      const txt = document.getElementById('liveText');
+      if (dataMeta.updated) {
+        const date = new Date(dataMeta.updated);
+        const today = new Date();
+        const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+        if (diffDays === 0) txt.textContent = 'Uppdaterad idag';
+        else if (diffDays === 1) txt.textContent = 'Uppdaterad igår';
+        else txt.textContent = `Uppdaterad för ${diffDays} dagar sedan`;
+      } else {
+        txt.textContent = 'Live-data';
+      }
+    }
+    function updateLastUpdated() {
+      if (dataMeta.updated) {
+        const date = new Date(dataMeta.updated);
+        document.getElementById('lastUpdated').textContent =
+          date.toLocaleDateString('sv-SE', { day: '2-digit', month: 'long', year: 'numeric' });
+      }
+    }
+
+    // Starta!
+    init();
+  </script>
+</body>
+</html>
