@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-update-data.py — Hämtar Systembolagets sortiment och bygger en bantad data.json
+update-data.py — Hämtar Systembolagets sortiment och bygger två JSON-filer
 för apkguiden.se.
 
 Datakällan är en publik daglig spegling av Systembolagets sortiment som
@@ -11,8 +11,10 @@ Skriptet:
   1. Laddar ner assortment.json från GitHub.
   2. Beräknar APK = (volym_ml × alkoholhalt%) / pris_kr.
   3. Filtrerar bort utgångna, lågalkoholhaltiga och saknade produkter.
-  4. Sorterar efter APK och behåller topp N per huvudkategori.
-  5. Skriver en kompakt data.json (~500 KB) som hemsidan läser.
+  4. Skriver två filer:
+       - data.json (~500 KB): topp N per huvudkategori, för snabb topplista.
+       - search-data.json (~5–7 MB, ~1.5–2 MB gzippad): hela sortimentet,
+         lazy-loadas av sajten när användaren börjar söka.
 """
 
 import json
@@ -26,6 +28,9 @@ SOURCE_URL = "https://raw.githubusercontent.com/AlexGustafsson/systembolaget-api
 
 # Var data.json hamnar (relativt repo-rot)
 OUTPUT_PATH = Path(__file__).resolve().parent.parent / "data.json"
+
+# Var search-data.json hamnar (hela sortimentet, lazy-loadas av sajten)
+SEARCH_OUTPUT_PATH = Path(__file__).resolve().parent.parent / "search-data.json"
 
 # Antal produkter att behålla per huvudkategori
 TOP_PER_CATEGORY = 500
@@ -136,7 +141,28 @@ def main() -> int:
     transformed = [transform(p) for p in filtered]
     transformed = [p for p in transformed if p["apk"] > 0 and p["name"]]
 
-    # Behåll topp N per huvudkategori
+    # ===== 1) Skriv search-data.json: hela sortimentet, sorterat efter APK =====
+    # Detta är den fullständiga "sökindex"-filen som sajten lazy-loadar
+    # när användaren börjar söka. Innehåller ALLA eligible produkter.
+    search_full = sorted(transformed, key=lambda x: x["apk"], reverse=True)
+    search_output = {
+        "updated": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "count": len(search_full),
+        "source": "https://github.com/AlexGustafsson/systembolaget-api-data",
+        "products": search_full,
+    }
+    SEARCH_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with SEARCH_OUTPUT_PATH.open("w", encoding="utf-8") as f:
+        json.dump(search_output, f, ensure_ascii=False, separators=(",", ":"))
+    search_size_mb = SEARCH_OUTPUT_PATH.stat().st_size / 1024 / 1024
+    print(
+        f"\nSkrev {len(search_full):,} produkter till {SEARCH_OUTPUT_PATH.name} "
+        f"({search_size_mb:.1f} MB)",
+        flush=True,
+    )
+
+    # ===== 2) Skriv data.json: topp N per huvudkategori =====
+    # Detta är den lilla, snabba filen som laddas direkt vid sidvisning.
     by_cat: dict[str, list] = {}
     for p in transformed:
         by_cat.setdefault(p["category"], []).append(p)
@@ -163,7 +189,7 @@ def main() -> int:
         json.dump(output, f, ensure_ascii=False, separators=(",", ":"))
 
     size_kb = OUTPUT_PATH.stat().st_size / 1024
-    print(f"\nSkrev {len(final):,} produkter till {OUTPUT_PATH} ({size_kb:.0f} KB)", flush=True)
+    print(f"Skrev {len(final):,} produkter till {OUTPUT_PATH.name} ({size_kb:.0f} KB)", flush=True)
     return 0
 
 
