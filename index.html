@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
@@ -199,6 +200,74 @@
       -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(244, 211, 94, 0.12);
     }
+
+    /* Sökfält */
+    .search-wrap {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0.875rem 1.5rem 0;
+    }
+    .search-inner {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      width: 18px;
+      height: 18px;
+      color: rgba(245, 235, 196, 0.7);
+      pointer-events: none;
+      flex-shrink: 0;
+    }
+    .search-input {
+      width: 100%;
+      padding: 0.75rem 2.75rem 0.75rem 2.75rem;
+      border-radius: 9999px;
+      background-color: rgba(244, 211, 94, 0.06);
+      color: var(--yellow);
+      border: 1.5px solid rgba(244, 211, 94, 0.2);
+      font-family: inherit;
+      font-size: 1rem; /* 16px – förhindrar iOS-zoom vid fokus */
+      font-weight: 500;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+      outline: none;
+      letter-spacing: -0.005em;
+    }
+    .search-input::placeholder {
+      color: rgba(245, 235, 196, 0.5);
+      font-weight: 400;
+    }
+    /* Dölj webbläsarnas inbyggda x-knapp för type=search */
+    .search-input::-webkit-search-cancel-button,
+    .search-input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+    .search-input:focus {
+      border-color: var(--yellow);
+      background-color: rgba(244, 211, 94, 0.1);
+    }
+    .search-clear {
+      position: absolute;
+      right: 0.5rem;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(244, 211, 94, 0.18);
+      color: var(--cream);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+    .search-clear:hover {
+      background: var(--yellow);
+      color: var(--green);
+    }
+    .search-clear svg { width: 14px; height: 14px; }
+
     .tabs {
       max-width: var(--max-width);
       margin: 0 auto;
@@ -673,6 +742,23 @@
 
   <!-- TABS (sticky) -->
   <nav class="tabs-wrap">
+    <div class="search-wrap">
+      <div class="search-inner">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.35-4.35"></path></svg>
+        <input
+          type="search"
+          class="search-input"
+          id="searchInput"
+          placeholder="Sök produkt, producent, druva eller land…"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Sök bland Systembolagets sortiment"
+        />
+        <button class="search-clear" id="searchClear" type="button" aria-label="Rensa sökning" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+      </div>
+    </div>
     <div class="tabs" id="tabs"></div>
   </nav>
 
@@ -733,7 +819,7 @@
       </div>
       <div class="footer-bottom">
         <div>apkguiden.se</div>
-        <div>Prototyp · v0.3</div>
+        <div>Prototyp · v0.4 (sök)</div>
       </div>
     </div>
   </footer>
@@ -765,11 +851,18 @@
     let selectedCategory = 'Alla';
     let dataMeta = { updated: null, count: 0 };
 
+    // Söktillstånd – search-data.json laddas lazy vid första sökningen
+    let searchData = null;          // null = ej laddad, [] = laddad men tom
+    let searchDataPromise = null;   // pågående fetch
+    let searchQuery = '';           // aktuell sökterm (trimmad)
+    let searchDebounceTimer = null;
+
     // ============================================
     // INIT
     // ============================================
     async function init() {
       renderTabs();
+      setupSearch();
       try {
         const response = await fetch('data.json', { cache: 'no-store' });
         if (!response.ok) throw new Error('Kunde inte hämta data');
@@ -785,6 +878,82 @@
         document.getElementById('loading').innerHTML =
           '<div style="font-size: 1rem; color: var(--cream);">Kunde inte ladda data. Försök igen senare.</div>';
       }
+    }
+
+    // ============================================
+    // SÖKFUNKTION
+    // ============================================
+    function setupSearch() {
+      const input = document.getElementById('searchInput');
+      const clearBtn = document.getElementById('searchClear');
+
+      // Förladda sökindex så fort användaren fokuserar fältet
+      input.addEventListener('focus', () => {
+        if (searchData === null && !searchDataPromise) {
+          loadSearchData();
+        }
+      });
+
+      input.addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim();
+        clearBtn.hidden = e.target.value.length === 0;
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(async () => {
+          if (searchQuery.length > 0 && searchData === null) {
+            await loadSearchData();
+          }
+          render();
+        }, 150);
+      });
+
+      clearBtn.addEventListener('click', () => {
+        input.value = '';
+        searchQuery = '';
+        clearBtn.hidden = true;
+        clearTimeout(searchDebounceTimer);
+        render();
+        input.focus();
+      });
+
+      // Esc rensar sökningen
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && searchQuery) {
+          input.value = '';
+          searchQuery = '';
+          clearBtn.hidden = true;
+          render();
+        }
+      });
+    }
+
+    async function loadSearchData() {
+      if (searchData !== null) return searchData;
+      if (searchDataPromise) return searchDataPromise;
+
+      searchDataPromise = (async () => {
+        try {
+          const response = await fetch('search-data.json', { cache: 'default' });
+          if (!response.ok) throw new Error('search-data.json saknas');
+          const data = await response.json();
+          const products = data.products || [];
+          // Förberäkna sökbar lowercase-sträng per produkt för snabb filtrering
+          for (const p of products) {
+            p._lc = [
+              p.name || '',
+              p.producer || '',
+              p.subcategory || '',
+              p.country || '',
+            ].join(' ').toLowerCase();
+          }
+          searchData = products;
+          return searchData;
+        } catch (err) {
+          console.error('Sökindex kunde inte laddas:', err);
+          searchData = [];
+          return searchData;
+        }
+      })();
+      return searchDataPromise;
     }
 
     // ============================================
@@ -809,9 +978,87 @@
     }
 
     // ============================================
-    // TOPPLISTA
+    // RENDERING – topplista eller sökresultat
     // ============================================
     function render() {
+      if (searchQuery) {
+        renderSearchResults();
+      } else {
+        renderTopList();
+      }
+    }
+
+    function renderSearchResults() {
+      const titleEl = document.getElementById('sectionTitle');
+      const eyebrowEl = document.querySelector('.section-eyebrow');
+      const sortIndicator = document.querySelector('.sort-indicator');
+      const loadingEl = document.getElementById('loading');
+      const emptyEl = document.getElementById('empty');
+      const podiumEl = document.getElementById('podium');
+      const listEl = document.getElementById('productList');
+
+      eyebrowEl.textContent = 'Sökresultat';
+      sortIndicator.textContent = 'Sorterat efter APK ↓';
+
+      // Om sökindex fortfarande laddas
+      if (searchData === null) {
+        titleEl.textContent = `Söker efter "${searchQuery}"…`;
+        loadingEl.style.display = 'flex';
+        loadingEl.querySelector('div:last-child').textContent = 'Laddar sökindex…';
+        podiumEl.style.display = 'none';
+        listEl.style.display = 'none';
+        emptyEl.style.display = 'none';
+        return;
+      }
+
+      loadingEl.style.display = 'none';
+      podiumEl.style.display = 'none'; // Aldrig podium i sökresultat – cleaner
+
+      // Sökindex laddades men är tomt → fetch misslyckades
+      if (searchData.length === 0) {
+        titleEl.textContent = `Sök efter "${searchQuery}"`;
+        emptyEl.style.display = 'block';
+        emptyEl.textContent = 'Sökindex kunde inte laddas just nu. Prova att ladda om sidan om en stund.';
+        listEl.style.display = 'none';
+        return;
+      }
+
+      const q = searchQuery.toLowerCase();
+      const inCategory = selectedCategory === 'Alla'
+        ? searchData
+        : searchData.filter(p => p.category === selectedCategory);
+      const matches = inCategory.filter(p => p._lc.includes(q));
+      // searchData är redan APK-sorterad från servern, men kategorifiltret bevarar ordningen
+      const top = matches.slice(0, 50);
+
+      const catSuffix = selectedCategory === 'Alla' ? '' : ` i ${selectedCategory}`;
+      if (matches.length === 0) {
+        titleEl.textContent = `Inga träffar för "${searchQuery}"${catSuffix}`;
+        emptyEl.style.display = 'block';
+        emptyEl.textContent = 'Prova en annan sökterm eller byt kategori.';
+        listEl.style.display = 'none';
+        return;
+      }
+
+      const shown = top.length;
+      const total = matches.length;
+      const more = total > shown ? ` (visar ${shown})` : '';
+      titleEl.textContent = `${total} ${total === 1 ? 'träff' : 'träffar'} för "${searchQuery}"${catSuffix}${more}`;
+
+      emptyEl.style.display = 'none';
+      listEl.style.display = 'flex';
+      listEl.innerHTML = top.map((p, i) => renderProductRow(p, i + 1, i)).join('');
+    }
+
+    // ============================================
+    // TOPPLISTA
+    // ============================================
+    function renderTopList() {
+      // Återställ rubriker (kan ha ändrats av sökläget)
+      document.querySelector('.section-eyebrow').textContent = 'Topplista';
+      document.querySelector('.sort-indicator').textContent = 'Sorterat efter APK ↓';
+      document.getElementById('empty').textContent = 'Inga produkter i den här kategorin.';
+
       const filtered = selectedCategory === 'Alla'
         ? allProducts
         : allProducts.filter(p => p.category === selectedCategory);
