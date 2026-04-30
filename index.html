@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>apkguiden.se – Bäst alkohol per krona på Systembolaget</title>
   <meta name="description" content="Topplista över Systembolagets sortiment, rangordnad efter alkohol per krona (APK). Uppdateras dagligen.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230F3D2E'/><text x='50' y='70' font-family='sans-serif' font-size='60' font-weight='800' text-anchor='middle' fill='%23F4D35E'>A</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230F3D2E'/><text x='50' y='66' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif' font-size='38' font-weight='900' text-anchor='middle' fill='%23F4D35E' letter-spacing='-2'>APK</text></svg>">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -306,6 +305,43 @@
     }
     .tab svg { width: 15px; height: 15px; flex-shrink: 0; }
 
+    /* Subtabs – underkategori-chips som dyker upp när man valt en huvudkategori */
+    .subtabs {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 1.5rem 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .subtabs::-webkit-scrollbar { display: none; }
+    .chip {
+      padding: 0.4rem 0.875rem;
+      border-radius: 9999px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      white-space: nowrap;
+      background: transparent;
+      color: rgba(245, 235, 196, 0.65);
+      border: 1px solid rgba(244, 211, 94, 0.15);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+    .chip:hover {
+      border-color: rgba(244, 211, 94, 0.45);
+      color: var(--cream);
+    }
+    .chip.active {
+      background: rgba(244, 211, 94, 0.18);
+      color: var(--yellow);
+      border-color: rgba(244, 211, 94, 0.45);
+      font-weight: 600;
+    }
+
     /* ============================================
        MAIN
        ============================================ */
@@ -373,6 +409,17 @@
       border: 1.5px solid rgba(244, 211, 94, 0.24);
       color: var(--yellow);
       transition: all 0.3s ease;
+      position: relative;
+    }
+    .podium-card.first .product-link {
+      background: rgba(15, 61, 46, 0.18);
+      color: var(--green-dark);
+      opacity: 0.7;
+    }
+    .podium-card.first .product-link:hover {
+      background: var(--green-dark);
+      color: var(--yellow);
+      opacity: 1;
     }
     .podium-card:hover {
       transform: translateY(-2px);
@@ -482,18 +529,19 @@
     }
     .product-row {
       display: grid;
-      grid-template-columns: 2.5rem 1fr auto auto;
-      gap: 0.75rem;
+      grid-template-columns: 2.5rem 3rem 1fr auto auto;
+      gap: 0.625rem;
       align-items: center;
-      padding: 1rem;
-      border-radius: 0.75rem;
+      padding: 0.875rem;
+      border-radius: 0.875rem;
       background-color: rgba(10, 45, 34, 0.6);
       border: 1.5px solid rgba(244, 211, 94, 0.12);
       transition: all 0.25s ease;
+      position: relative;
     }
     @media (min-width: 768px) {
       .product-row {
-        grid-template-columns: 3rem 1fr 7rem 11rem;
+        grid-template-columns: 3rem 4rem 1fr 7rem 11rem;
         gap: 1rem;
         padding: 1.25rem;
       }
@@ -512,18 +560,49 @@
     @media (min-width: 768px) {
       .product-rank { font-size: 1.875rem; }
     }
-    .product-info { min-width: 0; }
+
+    /* Produktbild från Systembolaget */
+    .product-image-wrap {
+      width: 3rem;
+      height: 3.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(245, 235, 196, 0.06);
+      border-radius: 0.375rem;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    @media (min-width: 768px) {
+      .product-image-wrap { width: 4rem; height: 4.75rem; }
+    }
+    .product-image {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      mix-blend-mode: lighten; /* tar bort vit bakgrund från PNG-bilder */
+    }
+    .product-image-fallback {
+      color: rgba(244, 211, 94, 0.3);
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .product-info { min-width: 0; padding-right: 0.5rem; }
     .product-name {
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 700;
       line-height: 1.2;
       letter-spacing: -0.01em;
       color: var(--yellow);
       overflow: hidden;
       text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
     }
     @media (min-width: 768px) {
-      .product-name { font-size: 1.125rem; }
+      .product-name { font-size: 1.125rem; -webkit-line-clamp: 1; white-space: nowrap; }
     }
     .product-meta {
       font-size: 0.75rem;
@@ -533,6 +612,23 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    /* Rank-badge: visar position eller percentil */
+    .product-rank-badge {
+      display: inline-block;
+      margin-top: 0.375rem;
+      padding: 0.1875rem 0.5rem;
+      border-radius: 0.375rem;
+      background: rgba(244, 211, 94, 0.12);
+      color: var(--yellow);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .product-rank-badge.is-elite {
+      background: var(--yellow);
+      color: var(--green-dark);
     }
     .product-pills {
       display: none;
@@ -579,6 +675,44 @@
       margin-left: 0.25rem;
       font-weight: 500;
       color: var(--yellow-muted);
+    }
+
+    /* Liten "Visa hos Systembolaget"-länk uppe i högra hörnet av varje rad */
+    .product-link {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.625rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      background: rgba(244, 211, 94, 0.08);
+      color: var(--cream);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      text-decoration: none;
+      opacity: 0.6;
+      transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+      z-index: 2;
+    }
+    .product-link:hover {
+      opacity: 1;
+      background: var(--yellow);
+      color: var(--green-dark);
+    }
+    .product-link svg {
+      width: 0.75rem;
+      height: 0.75rem;
+      flex-shrink: 0;
+    }
+    .product-link-text-mobile { display: inline; }
+    .product-link-text-full { display: none; }
+    @media (min-width: 768px) {
+      .product-link-text-mobile { display: none; }
+      .product-link-text-full { display: inline; }
+      .product-link { top: 0.75rem; right: 0.875rem; }
     }
 
     /* ============================================
@@ -730,10 +864,10 @@
         </div>
         <div>
           <div class="stat-label">Kategorier</div>
-          <div class="stat-value num-tabular">5</div>
+          <div class="stat-value num-tabular">3</div>
         </div>
         <div>
-          <div class="stat-label">Bäst APK</div>
+          <div class="stat-label">Bästa APK</div>
           <div class="stat-value highlight num-tabular" id="statBest">–<span class="stat-suffix">ml/kr</span></div>
         </div>
       </div>
@@ -749,7 +883,7 @@
           type="search"
           class="search-input"
           id="searchInput"
-          placeholder="Sök produkt, producent, druva eller land…"
+          placeholder="Sök bland alla 9 000+ produkter…"
           autocomplete="off"
           spellcheck="false"
           aria-label="Sök bland Systembolagets sortiment"
@@ -760,6 +894,7 @@
       </div>
     </div>
     <div class="tabs" id="tabs"></div>
+    <div class="subtabs" id="subtabs" hidden></div>
   </nav>
 
   <!-- MAIN -->
@@ -799,30 +934,31 @@
     <div class="footer-inner">
       <div class="footer-grid">
         <div>
-          <div class="footer-col-title">Om datan</div>
+          <div class="footer-col-title">Datakälla</div>
           <div class="footer-col-body">
-            Produktdata baseras på Systembolagets sortiment. Priser och tillgänglighet kan ändras – kontrollera alltid på <a href="https://systembolaget.se" target="_blank" rel="noopener">systembolaget.se</a> innan köp.
+            Uppdateras dagligen från Systembolagets sortiment via <a href="https://github.com/AlexGustafsson/systembolaget-api-data" target="_blank" rel="noopener">öppet GitHub-projekt</a>.
           </div>
         </div>
         <div>
-          <div class="footer-col-title">Källa</div>
+          <div class="footer-col-title">Räkneformel</div>
           <div class="footer-col-body">
-            Data hämtas från ett öppet GitHub-projekt som arkiverar Systembolagets sortiment dagligen. Senast uppdaterat: <span id="lastUpdated">–</span>.
+            APK = (volym × alkoholhalt) ÷ pris. Vid samma APK rangordnas billigare produkt först.
           </div>
         </div>
         <div>
           <div class="footer-col-title">Drick ansvarsfullt</div>
           <div class="footer-col-body">
-            Sajten är ett verktyg för prisjämförelse, inte en uppmaning att dricka mer. Alkohol kan skada dig och din omgivning. 18-årsgräns gäller.
+            18-årsgräns gäller. Kontrollera alltid pris och tillgänglighet på <a href="https://systembolaget.se" target="_blank" rel="noopener">systembolaget.se</a>.
           </div>
         </div>
       </div>
       <div class="footer-bottom">
         <div>apkguiden.se</div>
-        <div>Prototyp · v0.4 (sök)</div>
+        <div>Senast uppdaterat <span id="lastUpdated">–</span></div>
       </div>
     </div>
   </footer>
+  <!-- v0.5 (bilder, rank, länk, segmentering) -->
 
   <!-- ============================================
        JAVASCRIPT
@@ -843,12 +979,19 @@
       { key: 'Vin', label: 'Vin', icon: 'wine' },
       { key: 'Öl', label: 'Öl', icon: 'beer' },
       { key: 'Sprit', label: 'Sprit', icon: 'droplets' },
-      { key: 'Mousserande', label: 'Mousserande', icon: 'sparkles' },
-      { key: 'Cider & Blanddryck', label: 'Cider', icon: 'glass' },
     ];
+
+    // Sub-kategorier per huvudkategori. Matchar Systembolagets categoryLevel2.
+    // Bara dessa visas som chips; "Alla" inom kategorin är default.
+    const SUBCATEGORIES = {
+      'Vin': ['Rött vin', 'Vitt vin', 'Rosévin', 'Mousserande vin', 'Starkvin', 'Vinlåda', 'Smaksatt vin & fruktvin', 'Glögg och Glühwein'],
+      'Öl': ['Ale', 'Ljus lager', 'Mellanmörk & Mörk lager', 'Veteöl', 'Porter & Stout', 'Syrlig öl', 'Annan öl'],
+      'Sprit': ['Whisky', 'Gin & Genever', 'Rom & Lagrad sockerrörssprit', 'Likör', 'Armagnac & Brandy', 'Akvavit & Kryddat brännvin', 'Grappa & Marc', 'Smaksatt sprit'],
+    };
 
     let allProducts = [];
     let selectedCategory = 'Alla';
+    let selectedSubcategory = null; // null = visa alla i huvudkategorin
     let dataMeta = { updated: null, count: 0 };
 
     // Söktillstånd – search-data.json laddas lazy vid första sökningen
@@ -957,7 +1100,7 @@
     }
 
     // ============================================
-    // KATEGORI-TABBAR
+    // KATEGORI-TABBAR + UNDERKATEGORI-CHIPS
     // ============================================
     function renderTabs() {
       const tabsEl = document.getElementById('tabs');
@@ -970,9 +1113,38 @@
       tabsEl.querySelectorAll('.tab').forEach(btn => {
         btn.addEventListener('click', () => {
           selectedCategory = btn.dataset.cat;
+          selectedSubcategory = null; // Nollställ chip när man byter huvudkategori
           renderTabs();
           render();
           window.scrollTo({ top: document.querySelector('.tabs-wrap').offsetTop - 1, behavior: 'smooth' });
+        });
+      });
+      renderSubtabs();
+    }
+
+    function renderSubtabs() {
+      const subEl = document.getElementById('subtabs');
+      const subs = SUBCATEGORIES[selectedCategory];
+      if (!subs) {
+        subEl.hidden = true;
+        subEl.innerHTML = '';
+        return;
+      }
+      subEl.hidden = false;
+      const chips = [
+        { key: null, label: `Allt ${selectedCategory.toLowerCase()}` },
+        ...subs.map(s => ({ key: s, label: s })),
+      ];
+      subEl.innerHTML = chips.map(c => `
+        <button class="chip ${c.key === selectedSubcategory ? 'active' : ''}" data-sub="${c.key === null ? '' : escapeHtml(c.key)}">
+          ${escapeHtml(c.label)}
+        </button>
+      `).join('');
+      subEl.querySelectorAll('.chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedSubcategory = btn.dataset.sub || null;
+          renderSubtabs();
+          render();
         });
       });
     }
@@ -1024,14 +1196,19 @@
       }
 
       const q = searchQuery.toLowerCase();
-      const inCategory = selectedCategory === 'Alla'
+      let inCategory = selectedCategory === 'Alla'
         ? searchData
         : searchData.filter(p => p.category === selectedCategory);
+      if (selectedSubcategory) {
+        inCategory = inCategory.filter(p => p.subcategory === selectedSubcategory);
+      }
       const matches = inCategory.filter(p => p._lc.includes(q));
-      // searchData är redan APK-sorterad från servern, men kategorifiltret bevarar ordningen
+      // searchData är redan APK-sorterad från servern, kategorifilter bevarar ordningen
       const top = matches.slice(0, 50);
 
-      const catSuffix = selectedCategory === 'Alla' ? '' : ` i ${selectedCategory}`;
+      const filterLabel = selectedSubcategory
+        || (selectedCategory === 'Alla' ? null : selectedCategory);
+      const catSuffix = filterLabel ? ` i ${filterLabel}` : '';
       if (matches.length === 0) {
         titleEl.textContent = `Inga träffar för "${searchQuery}"${catSuffix}`;
         emptyEl.style.display = 'block';
@@ -1059,22 +1236,28 @@
       document.querySelector('.sort-indicator').textContent = 'Sorterat efter APK ↓';
       document.getElementById('empty').textContent = 'Inga produkter i den här kategorin.';
 
-      const filtered = selectedCategory === 'Alla'
+      // Filtrera baserat på huvudkategori + ev. underkategori
+      let filtered = selectedCategory === 'Alla'
         ? allProducts
         : allProducts.filter(p => p.category === selectedCategory);
+      if (selectedSubcategory) {
+        filtered = filtered.filter(p => p.subcategory === selectedSubcategory);
+      }
       const top = filtered.slice(0, 20);
 
-      // Statistik
+      // Statistik – TOTAL antal i hela datasetet, och GLOBAL bästa APK (oavsett filter)
+      // Användaren ville att headern alltid visar overall bäst APK.
       document.getElementById('statCount').textContent = formatNumber(dataMeta.count);
-      const bestApk = top[0]?.apk ?? 0;
+      const globalBest = allProducts[0]?.apk ?? 0;
       document.getElementById('statBest').innerHTML =
-        `${bestApk.toFixed(2)}<span class="stat-suffix">ml/kr</span>`;
+        `${globalBest.toFixed(2)}<span class="stat-suffix">ml/kr</span>`;
 
-      // Sektion-titel
+      // Sektion-titel: visa underkategori om vald, annars huvudkategori
       const titleEl = document.getElementById('sectionTitle');
-      titleEl.textContent = selectedCategory === 'Alla'
-        ? `Topp ${top.length} totalt`
-        : `Topp ${top.length} – ${selectedCategory}`;
+      const label = selectedSubcategory || (selectedCategory === 'Alla' ? null : selectedCategory);
+      titleEl.textContent = label
+        ? `Topp ${top.length} – ${label}`
+        : `Topp ${top.length} totalt`;
 
       // Tomt tillstånd
       document.getElementById('loading').style.display = 'none';
@@ -1121,9 +1304,10 @@
         : `${p.volume} ml`;
       return `
         <div class="podium-card ${isFirst ? 'first' : ''} fade-up" style="animation-delay: ${index * 0.08}s">
+          ${renderSystembolagetLink(p, isFirst)}
           <div class="podium-rank">
             <div class="podium-rank-num">№ ${String(rank).padStart(2, '0')}</div>
-            ${isFirst ? '<div class="podium-badge">Bäst APK</div>' : ''}
+            ${isFirst ? '<div class="podium-badge">BÄST APK</div>' : ''}
           </div>
           <div style="flex: 1;">
             <div class="podium-name">${escapeHtml(p.name)}</div>
@@ -1152,12 +1336,16 @@
       const volumeText = p.volume >= 1000
         ? `${(p.volume / 1000).toFixed(p.volume % 1000 === 0 ? 0 : 2)} L`
         : `${p.volume} ml`;
+      const rankBadge = renderRankBadge(p);
       return `
         <div class="product-row fade-up" style="animation-delay: ${Math.min(index * 0.04, 0.6)}s">
+          ${renderSystembolagetLink(p)}
           <div class="product-rank num-tabular">${String(rank).padStart(2, '0')}</div>
+          <div class="product-image-wrap">${renderProductImage(p)}</div>
           <div class="product-info">
             <div class="product-name">${escapeHtml(p.name)}</div>
             <div class="product-meta">${escapeHtml(p.producer || '')} ${p.subcategory ? '· ' + escapeHtml(p.subcategory) : ''}</div>
+            ${rankBadge}
             <div class="product-pills">
               <span class="pill">${p.alcohol}%</span>
               <span class="pill">${volumeText}</span>
@@ -1174,6 +1362,38 @@
           </div>
         </div>
       `;
+    }
+
+    // Bild från Systembolaget – fallback till abstrakt flask-ikon om saknas
+    function renderProductImage(p) {
+      if (!p.image) {
+        return `<svg class="product-image-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8"></path><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"></path></svg>`;
+      }
+      return `<img class="product-image" src="${escapeHtml(p.image)}_400.png" alt="" loading="lazy" onerror="this.style.display='none'">`;
+    }
+
+    // Liten "Visa hos Systembolaget"-länk uppe i högra hörnet av varje rad/kort
+    function renderSystembolagetLink(p, asPodium) {
+      if (!p.id) return '';
+      // Sökväg som garantialt funkar – tar användaren till produkten på Systembolaget.se
+      const url = `https://www.systembolaget.se/sok?textQuery=${encodeURIComponent(p.id)}`;
+      const cls = asPodium ? 'product-link product-link-podium' : 'product-link';
+      return `<a href="${url}" class="${cls}" target="_blank" rel="noopener noreferrer" aria-label="Visa ${escapeHtml(p.name)} hos Systembolaget"
+        ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg
+        ><span class="product-link-text-mobile">Köp</span
+        ><span class="product-link-text-full">Systembolaget</span></a>`;
+    }
+
+    // Rank-badge: visar "Topp X%" för elite, annars "#X av Y"
+    function renderRankBadge(p) {
+      if (!p.rank || !p.categoryTotal) return '';
+      const pct = (p.rank / p.categoryTotal) * 100;
+      let label, elite = false;
+      if (pct <= 1) { label = 'Topp 1% i ' + p.category.toLowerCase(); elite = true; }
+      else if (pct <= 5) { label = 'Topp 5% i ' + p.category.toLowerCase(); elite = true; }
+      else if (pct <= 10) { label = 'Topp 10% i ' + p.category.toLowerCase(); }
+      else { label = `#${formatNumber(p.rank)} av ${formatNumber(p.categoryTotal)} i ${p.category.toLowerCase()}`; }
+      return `<div class="product-rank-badge${elite ? ' is-elite' : ''}">${label}</div>`;
     }
 
     // ============================================
