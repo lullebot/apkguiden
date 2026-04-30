@@ -41,12 +41,15 @@ MIN_ALCOHOL_PERCENT = 1.0
 # Minsta volym (ml) – filtrera bort konstigheter
 MIN_VOLUME_ML = 50
 
-# Kategorier vi vill behålla (matchar categoryLevel1 i Systembolagets data)
-KEEP_CATEGORIES = {"Vin", "Öl", "Sprit", "Mousserande", "Cider & Blanddrycker"}
+# Kategorier vi vill behålla (matchar categoryLevel1 i Systembolagets data).
+# OBS: "Mousserande" finns INTE som egen huvudkategori – det ligger som
+# underkategori "Mousserande vin" under Vin. "Cider & Blanddrycker" verkar
+# inte heller dyka upp i denna datadump (är troligen klassad annorlunda).
+KEEP_CATEGORIES = {"Vin", "Öl", "Sprit", "Cider & Blanddrycker"}
 
 # Mappning för att normalisera kategorinamnet till det vi använder i UI
 CATEGORY_MAP = {
-    "Cider & Blanddrycker": "Cider & Blanddryck",
+    "Cider & Blanddrycker": "Cider",
 }
 
 
@@ -141,10 +144,28 @@ def main() -> int:
     transformed = [transform(p) for p in filtered]
     transformed = [p for p in transformed if p["apk"] > 0 and p["name"]]
 
-    # ===== 1) Skriv search-data.json: hela sortimentet, sorterat efter APK =====
+    # ===== Tiebreaker-sortering =====
+    # APK desc → pris asc → namn asc. Samma APK? Då vinner billigare produkt.
+    # Namn som tertiär nyckel ger 100% deterministisk ordning oavsett input.
+    def sort_key(p):
+        return (-p["apk"], p["price"] or float("inf"), p["name"] or "")
+
+    # ===== Tilldela rank inom varje huvudkategori =====
+    # rank = 1-baserad placering bland sin kategori, sorterat med tiebreakers.
+    # categoryTotal = antalet produkter i kategorin – frontend kan räkna percentil.
+    by_cat_for_rank: dict[str, list] = {}
+    for p in transformed:
+        by_cat_for_rank.setdefault(p["category"], []).append(p)
+    for cat, items in by_cat_for_rank.items():
+        items.sort(key=sort_key)
+        for idx, p in enumerate(items, start=1):
+            p["rank"] = idx
+            p["categoryTotal"] = len(items)
+
+    # ===== 1) Skriv search-data.json: hela sortimentet, sorterat =====
     # Detta är den fullständiga "sökindex"-filen som sajten lazy-loadar
     # när användaren börjar söka. Innehåller ALLA eligible produkter.
-    search_full = sorted(transformed, key=lambda x: x["apk"], reverse=True)
+    search_full = sorted(transformed, key=sort_key)
     search_output = {
         "updated": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "count": len(search_full),
@@ -169,13 +190,13 @@ def main() -> int:
 
     final = []
     for cat, items in by_cat.items():
-        items.sort(key=lambda x: x["apk"], reverse=True)
+        items.sort(key=sort_key)
         kept = items[:TOP_PER_CATEGORY]
         print(f"  {cat}: {len(items):,} → {len(kept)} (bäst APK: {kept[0]['apk']:.2f})", flush=True)
         final.extend(kept)
 
-    # Slutlig sortering
-    final.sort(key=lambda x: x["apk"], reverse=True)
+    # Slutlig sortering med samma tiebreakers
+    final.sort(key=sort_key)
 
     output = {
         "updated": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
