@@ -971,7 +971,7 @@
         <div>
           <div class="footer-col-title">Datakälla</div>
           <div class="footer-col-body">
-            Uppdateras dagligen från Systembolagets sortiment via <a href="https://github.com/AlexGustafsson/systembolaget-api-data" target="_blank" rel="noopener">öppet GitHub-projekt</a>.
+            Uppdateras dagligen baserat på Systembolagets aktuella sortiment.
           </div>
         </div>
         <div>
@@ -1245,23 +1245,16 @@
       }
 
       const q = searchQuery.toLowerCase();
-      let inCategory = selectedCategory === 'Alla'
-        ? searchData
-        : searchData.filter(p => p.category === selectedCategory);
-      if (selectedSubcategory) {
-        inCategory = inCategory.filter(p => matchesSubcategory(p, selectedSubcategory));
-      }
-      const matches = inCategory.filter(p => p._lc.includes(q));
-      // searchData är redan APK-sorterad från servern, kategorifilter bevarar ordningen
+      // Sök ALLTID i hela sortimentet, oavsett vilken kategori/subkategori
+       // som råkar vara vald. Aktiv kategori bara stylar UI, inte resultaten.
+      const matches = searchData.filter(p => p._lc.includes(q));
+      // searchData är redan APK-sorterad från servern
       const top = matches.slice(0, 50);
 
-      const filterLabel = selectedSubcategory
-        || (selectedCategory === 'Alla' ? null : selectedCategory);
-      const catSuffix = filterLabel ? ` i ${filterLabel}` : '';
       if (matches.length === 0) {
-        titleEl.textContent = `Inga träffar för "${searchQuery}"${catSuffix}`;
+        titleEl.textContent = `Inga träffar för "${searchQuery}"`;
         emptyEl.style.display = 'block';
-        emptyEl.textContent = 'Prova en annan sökterm eller byt kategori.';
+        emptyEl.textContent = 'Prova en annan sökterm.';
         listEl.style.display = 'none';
         return;
       }
@@ -1269,7 +1262,7 @@
       const shown = top.length;
       const total = matches.length;
       const more = total > shown ? ` (visar ${shown})` : '';
-      titleEl.textContent = `${total} ${total === 1 ? 'träff' : 'träffar'} för "${searchQuery}"${catSuffix}${more}`;
+      titleEl.textContent = `${total} ${total === 1 ? 'träff' : 'träffar'} för "${searchQuery}"${more}`;
 
       emptyEl.style.display = 'none';
       listEl.style.display = 'flex';
