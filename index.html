@@ -178,11 +178,16 @@
     /* APK-fördelningsgraf */
     .chart {
       width: 100%;
-      max-width: 32rem;
+      max-width: 36rem;
       margin: 0 auto;
     }
     @media (min-width: 1024px) {
-      .chart { margin: 0; max-width: none; }
+      .chart {
+        margin: 0;
+        max-width: none;
+        align-self: end;       /* sitter i botten av grid-cellen */
+        padding-top: 2rem;     /* skjut ner den något så den linjerar med statsraden */
+      }
     }
     .chart-eyebrow {
       font-size: 0.75rem;
@@ -214,14 +219,14 @@
     .chart-bar { transition: fill 0.2s ease, opacity 0.2s ease; }
     .chart-bar:hover { fill: var(--yellow); opacity: 1; }
     .chart-axis-label {
-      font-size: 10px;
+      font-size: 11px;
       fill: rgba(245, 235, 196, 0.55);
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
     }
     .chart-axis-value {
-      font-size: 10px;
+      font-size: 11px;
       fill: rgba(245, 235, 196, 0.5);
       font-variant-numeric: tabular-nums;
     }
@@ -229,15 +234,15 @@
       stroke: var(--yellow);
       stroke-width: 1.5;
       stroke-dasharray: 3 3;
-      opacity: 0.7;
+      opacity: 0.75;
     }
     .chart-marker-text {
-      font-size: 11px;
+      font-size: 12px;
       fill: var(--yellow);
       font-weight: 700;
     }
     .chart-marker-sub {
-      font-size: 9px;
+      font-size: 10px;
       fill: rgba(244, 211, 94, 0.7);
       font-weight: 500;
       letter-spacing: 0.05em;
@@ -1569,27 +1574,29 @@
       }
       const maxCount = Math.max(...bins);
 
-      // SVG-dimensioner. ViewBox skalar responsivt till containern.
-      const W = 480;
-      const H = 260;
-      const PAD_TOP = 28;
-      const PAD_BOT = 38;
-      const PAD_L = 40;
-      const PAD_R = 16;
+      // SVG-dimensioner. Större viewBox = grafen renderas större på skärm.
+      // ViewBox-bredden är 560 (mer luft), höjden 360 (~38% högre än innan).
+      const W = 560;
+      const H = 360;
+      const PAD_TOP = 32;
+      const PAD_BOT = 44;
+      const PAD_L = 44;
+      const PAD_R = 18;
       const chartW = W - PAD_L - PAD_R;
       const chartH = H - PAD_TOP - PAD_BOT;
       const barGap = 3;
       const barW = (chartW / BIN_COUNT) - barGap;
 
-      // Färg-gradient: stapel 0 = dämpad (yellow-muted), sista stapel = full gul.
-      // Lerp mellan två RGB-färger så att högre APK ser hetare ut.
-      // var(--yellow-muted) = #BAA86C (dämpad sand), var(--yellow) = #F4D35E (full gul)
+      // Färg-gradient inom yellow-familjen, från lite mörkare ockragul till
+      // varm full gul. Ingen grå-ton involverad – bara värme som ökar mot
+      // höger där elite-APK bor. Slut-färgen är samma som var(--yellow).
       const lerp = (a, b, t) => Math.round(a + (b - a) * t);
       const barColor = (idx) => {
         const t = idx / (BIN_COUNT - 1);
-        const r = lerp(0xBA, 0xF4, t);
-        const g = lerp(0xA8, 0xD3, t);
-        const b = lerp(0x6C, 0x5E, t);
+        // Start: #C99A2E (mörk ockragul), slut: #F4D35E (full gul)
+        const r = lerp(0xC9, 0xF4, t);
+        const g = lerp(0x9A, 0xD3, t);
+        const b = lerp(0x2E, 0x5E, t);
         return `rgb(${r},${g},${b})`;
       };
 
