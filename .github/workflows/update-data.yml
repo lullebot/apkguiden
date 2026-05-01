@@ -2,7 +2,10 @@ name: Uppdatera produktdata
 
 on:
   schedule:
-    - cron: '0 6 * * *'
+    # Måndagar kl 06:00 UTC (07:00 svensk tid på vintern, 08:00 på sommaren).
+    # Veckovis = lågprofil mot Systembolaget, sortimentet uppdateras
+    # ändå bara fyra gånger om året enligt dem själva.
+    - cron: '0 6 * * 1'
   workflow_dispatch:
 
 permissions:
