@@ -432,9 +432,12 @@
     }
     .podium-rank {
       display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-bottom: 1rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-bottom: 0.875rem;
+      /* Padding-right gör plats för Systembolaget-länken i högra hörnet */
+      padding-right: 5.5rem;
     }
     .podium-rank-num {
       font-size: 0.75rem;
@@ -448,12 +451,53 @@
       font-size: 0.625rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      font-weight: 700;
-      padding: 0.25rem 0.5rem;
+      font-weight: 800;
+      padding: 0.3rem 0.625rem;
       border-radius: 9999px;
       background-color: var(--green);
       color: var(--yellow);
     }
+
+    /* Podium-body: bild bredvid namnet/metan */
+    .podium-body {
+      display: flex;
+      gap: 0.875rem;
+      align-items: flex-start;
+      flex: 1;
+      min-width: 0;
+      margin-bottom: 0.5rem;
+    }
+    .podium-image-wrap {
+      width: 3.5rem;
+      height: 4.5rem;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(245, 235, 196, 0.08);
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+    .podium-card.first .podium-image-wrap {
+      background: rgba(15, 61, 46, 0.08);
+    }
+    .podium-image {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    /* Bilder från Systembolaget har vit bakgrund – blend den bort */
+    .podium-card:not(.first) .podium-image { mix-blend-mode: lighten; }
+    .podium-card.first .podium-image { mix-blend-mode: multiply; }
+    .podium-image-fallback {
+      color: rgba(244, 211, 94, 0.35);
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+    .podium-card.first .podium-image-fallback {
+      color: rgba(15, 61, 46, 0.35);
+    }
+    .podium-text { flex: 1; min-width: 0; }
     .podium-name {
       font-size: 1.25rem;
       font-weight: 700;
@@ -613,7 +657,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    /* Rank-badge: visar position eller percentil */
+    /* Rank-badge: visar position inom huvudkategori */
     .product-rank-badge {
       display: inline-block;
       margin-top: 0.375rem;
@@ -625,10 +669,6 @@
       font-weight: 700;
       letter-spacing: 0.02em;
       font-variant-numeric: tabular-nums;
-    }
-    .product-rank-badge.is-elite {
-      background: var(--yellow);
-      color: var(--green-dark);
     }
     .product-pills {
       display: none;
@@ -981,13 +1021,27 @@
       { key: 'Sprit', label: 'Sprit', icon: 'droplets' },
     ];
 
-    // Sub-kategorier per huvudkategori. Matchar Systembolagets categoryLevel2.
-    // Bara dessa visas som chips; "Alla" inom kategorin är default.
+    // Sub-kategorier per huvudkategori. Matchar Systembolagets categoryLevel2,
+    // utom när nyckeln finns i SUBCATEGORY_FILTERS – då används specialfilter.
     const SUBCATEGORIES = {
-      'Vin': ['Rött vin', 'Vitt vin', 'Rosévin', 'Mousserande vin', 'Starkvin', 'Vinlåda', 'Smaksatt vin & fruktvin', 'Glögg och Glühwein'],
+      'Vin': ['Rött vin', 'Vitt vin', 'Rosévin', 'Mousserande vin', 'Starkvin', 'Vinbox', 'Smaksatt vin & fruktvin', 'Glögg och Glühwein'],
       'Öl': ['Ale', 'Ljus lager', 'Mellanmörk & Mörk lager', 'Veteöl', 'Porter & Stout', 'Syrlig öl', 'Annan öl'],
       'Sprit': ['Whisky', 'Gin & Genever', 'Rom & Lagrad sockerrörssprit', 'Likör', 'Armagnac & Brandy', 'Akvavit & Kryddat brännvin', 'Grappa & Marc', 'Smaksatt sprit'],
     };
+
+    // Specialfilter: vissa "subkategori"-chips matchar något annat fält än
+    // subcategory. T.ex. "Vinbox" är inte en Systembolags-subkategori – det
+    // är alla viner med packaging="Box" (3L-kartong).
+    const SUBCATEGORY_FILTERS = {
+      'Vinbox': p => p.packaging === 'Box',
+    };
+
+    function matchesSubcategory(p, subcategory) {
+      if (!subcategory) return true;
+      const customFilter = SUBCATEGORY_FILTERS[subcategory];
+      if (customFilter) return customFilter(p);
+      return p.subcategory === subcategory;
+    }
 
     let allProducts = [];
     let selectedCategory = 'Alla';
@@ -1200,7 +1254,7 @@
         ? searchData
         : searchData.filter(p => p.category === selectedCategory);
       if (selectedSubcategory) {
-        inCategory = inCategory.filter(p => p.subcategory === selectedSubcategory);
+        inCategory = inCategory.filter(p => matchesSubcategory(p, selectedSubcategory));
       }
       const matches = inCategory.filter(p => p._lc.includes(q));
       // searchData är redan APK-sorterad från servern, kategorifilter bevarar ordningen
@@ -1241,7 +1295,7 @@
         ? allProducts
         : allProducts.filter(p => p.category === selectedCategory);
       if (selectedSubcategory) {
-        filtered = filtered.filter(p => p.subcategory === selectedSubcategory);
+        filtered = filtered.filter(p => matchesSubcategory(p, selectedSubcategory));
       }
       const top = filtered.slice(0, 20);
 
@@ -1309,13 +1363,16 @@
             <div class="podium-rank-num">№ ${String(rank).padStart(2, '0')}</div>
             ${isFirst ? '<div class="podium-badge">BÄST APK</div>' : ''}
           </div>
-          <div style="flex: 1;">
-            <div class="podium-name">${escapeHtml(p.name)}</div>
-            <div class="podium-meta">${escapeHtml(p.producer || '')} ${p.country ? '· ' + escapeHtml(p.country) : ''}</div>
-            <div class="pills">
-              ${p.subcategory ? `<span class="pill">${escapeHtml(p.subcategory)}</span>` : ''}
-              <span class="pill">${p.alcohol}%</span>
-              <span class="pill">${volumeText}</span>
+          <div class="podium-body">
+            <div class="podium-image-wrap">${renderPodiumImage(p)}</div>
+            <div class="podium-text">
+              <div class="podium-name">${escapeHtml(p.name)}</div>
+              <div class="podium-meta">${escapeHtml(p.producer || '')} ${p.country ? '· ' + escapeHtml(p.country) : ''}</div>
+              <div class="pills">
+                ${p.subcategory ? `<span class="pill">${escapeHtml(p.subcategory)}</span>` : ''}
+                <span class="pill">${p.alcohol}%</span>
+                <span class="pill">${volumeText}</span>
+              </div>
             </div>
           </div>
           <div class="podium-footer">
@@ -1330,6 +1387,14 @@
           </div>
         </div>
       `;
+    }
+
+    // Bild för podium-kort. Använder samma _400.png-suffix som rader.
+    function renderPodiumImage(p) {
+      if (!p.image) {
+        return `<svg class="podium-image-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8"></path><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"></path></svg>`;
+      }
+      return `<img class="podium-image" src="${escapeHtml(p.image)}_400.png" alt="" loading="lazy" onerror="this.style.display='none'">`;
     }
 
     function renderProductRow(p, rank, index) {
@@ -1384,16 +1449,11 @@
         ><span class="product-link-text-full">Systembolaget</span></a>`;
     }
 
-    // Rank-badge: visar "Topp X%" för elite, annars "#X av Y"
+    // Rank-badge: alltid "#X av Y i kategori" – konsekvent format
     function renderRankBadge(p) {
       if (!p.rank || !p.categoryTotal) return '';
-      const pct = (p.rank / p.categoryTotal) * 100;
-      let label, elite = false;
-      if (pct <= 1) { label = 'Topp 1% i ' + p.category.toLowerCase(); elite = true; }
-      else if (pct <= 5) { label = 'Topp 5% i ' + p.category.toLowerCase(); elite = true; }
-      else if (pct <= 10) { label = 'Topp 10% i ' + p.category.toLowerCase(); }
-      else { label = `#${formatNumber(p.rank)} av ${formatNumber(p.categoryTotal)} i ${p.category.toLowerCase()}`; }
-      return `<div class="product-rank-badge${elite ? ' is-elite' : ''}">${label}</div>`;
+      const label = `#${formatNumber(p.rank)} av ${formatNumber(p.categoryTotal)} i ${p.category.toLowerCase()}`;
+      return `<div class="product-rank-badge">${label}</div>`;
     }
 
     // ============================================
