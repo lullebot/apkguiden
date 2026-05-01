@@ -486,9 +486,8 @@
       max-height: 100%;
       object-fit: contain;
     }
-    /* Bilder från Systembolaget har vit bakgrund – blend den bort */
-    .podium-card:not(.first) .podium-image { mix-blend-mode: lighten; }
-    .podium-card.first .podium-image { mix-blend-mode: multiply; }
+    /* Inga blend-modes – Systembolagets PNG-bilder är transparenta och
+       flyter fritt mot kortets bakgrund. */
     .podium-image-fallback {
       color: rgba(244, 211, 94, 0.35);
       width: 1.75rem;
@@ -624,7 +623,6 @@
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
-      mix-blend-mode: lighten; /* tar bort vit bakgrund från PNG-bilder */
     }
     .product-image-fallback {
       color: rgba(244, 211, 94, 0.3);
@@ -1389,12 +1387,14 @@
       `;
     }
 
-    // Bild för podium-kort. Använder samma _400.png-suffix som rader.
+    // Bild för podium-kort. Levereras i 2 storlekar – browsern väljer rätt
+    // baserat på pixeldensitet (mindre på vanliga skärmar, skarp på Retina).
     function renderPodiumImage(p) {
       if (!p.image) {
         return `<svg class="podium-image-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8"></path><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"></path></svg>`;
       }
-      return `<img class="podium-image" src="${escapeHtml(p.image)}_400.png" alt="" loading="lazy" onerror="this.style.display='none'">`;
+      const base = escapeHtml(p.image);
+      return `<img class="podium-image" src="${base}_400.png" srcset="${base}_400.png 1x, ${base}_800.png 2x" alt="" loading="lazy" onerror="this.style.display='none'">`;
     }
 
     function renderProductRow(p, rank, index) {
@@ -1434,7 +1434,8 @@
       if (!p.image) {
         return `<svg class="product-image-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8"></path><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"></path></svg>`;
       }
-      return `<img class="product-image" src="${escapeHtml(p.image)}_400.png" alt="" loading="lazy" onerror="this.style.display='none'">`;
+      const base = escapeHtml(p.image);
+      return `<img class="product-image" src="${base}_200.png" srcset="${base}_200.png 1x, ${base}_400.png 2x" alt="" loading="lazy" onerror="this.style.display='none'">`;
     }
 
     // Liten "Visa hos Systembolaget"-länk uppe i högra hörnet av varje rad/kort
