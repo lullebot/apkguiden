@@ -474,20 +474,18 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(245, 235, 196, 0.08);
       border-radius: 0.5rem;
       overflow: hidden;
-    }
-    .podium-card.first .podium-image-wrap {
-      background: rgba(15, 61, 46, 0.08);
     }
     .podium-image {
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
     }
-    /* Inga blend-modes – Systembolagets PNG-bilder är transparenta och
-       flyter fritt mot kortets bakgrund. */
+    /* Bilderna från Systembolaget har en svagt grön bakgrund inbakad i PNG-en.
+       På gröna podium-kort smälter den in OK utan ram. På det gula 1:a-kortet
+       använder vi multiply så bakgrunden mörknar och blir grön mot gult. */
+    .podium-card.first .podium-image { mix-blend-mode: multiply; }
     .podium-image-fallback {
       color: rgba(244, 211, 94, 0.35);
       width: 1.75rem;
@@ -611,7 +609,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(245, 235, 196, 0.06);
       border-radius: 0.375rem;
       overflow: hidden;
       flex-shrink: 0;
