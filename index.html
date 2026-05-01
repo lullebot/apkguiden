@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>apkguiden.se – Bäst alkohol per krona på Systembolaget</title>
-  <meta name="description" content="Topplista över Systembolagets sortiment, rangordnad efter alkohol per krona (APK). Uppdateras dagligen.">
+  <meta name="description" content="Topplista över Systembolagets sortiment, rangordnad efter alkohol per krona (APK). Uppdateras varje vecka.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230F3D2E'/><text x='50' y='66' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif' font-size='38' font-weight='900' text-anchor='middle' fill='%23F4D35E' letter-spacing='-2'>APK</text></svg>">
 
   <!-- Fonts -->
@@ -117,6 +117,20 @@
     @media (min-width: 768px) {
       .hero-inner { padding: 6rem 1.5rem; }
     }
+    /* På desktop: text till vänster, fördelningsgraf till höger */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 3rem;
+      align-items: center;
+    }
+    @media (min-width: 1024px) {
+      .hero-grid {
+        grid-template-columns: 1.1fr 1fr;
+        gap: 4rem;
+      }
+    }
+    .hero-text { min-width: 0; }
     .hero-eyebrow {
       font-size: 0.75rem;
       letter-spacing: 0.3em;
@@ -157,6 +171,75 @@
     }
     @media (min-width: 768px) {
       .stats { gap: 2rem; }
+    }
+
+    /* APK-fördelningsgraf */
+    .chart {
+      width: 100%;
+      max-width: 32rem;
+      margin: 0 auto;
+    }
+    @media (min-width: 1024px) {
+      .chart { margin: 0; max-width: none; }
+    }
+    .chart-eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--yellow-muted);
+      margin-bottom: 0.75rem;
+    }
+    .chart-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--cream);
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.01em;
+    }
+    .chart-subtitle {
+      font-size: 0.8125rem;
+      color: var(--cream);
+      opacity: 0.65;
+      margin-bottom: 1.25rem;
+      line-height: 1.5;
+    }
+    .chart-svg-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .chart-svg { display: block; width: 100%; height: auto; }
+    .chart-bar { fill: var(--yellow-muted); transition: fill 0.2s ease; }
+    .chart-bar:hover { fill: var(--yellow); }
+    .chart-bar.is-tail { fill: var(--yellow); }
+    .chart-axis-label {
+      font-size: 10px;
+      fill: rgba(245, 235, 196, 0.55);
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .chart-axis-value {
+      font-size: 10px;
+      fill: rgba(245, 235, 196, 0.5);
+      font-variant-numeric: tabular-nums;
+    }
+    .chart-marker-line {
+      stroke: var(--yellow);
+      stroke-width: 1.5;
+      stroke-dasharray: 3 3;
+      opacity: 0.7;
+    }
+    .chart-marker-text {
+      font-size: 11px;
+      fill: var(--yellow);
+      font-weight: 700;
+    }
+    .chart-marker-sub {
+      font-size: 9px;
+      fill: rgba(244, 211, 94, 0.7);
+      font-weight: 500;
+      letter-spacing: 0.05em;
     }
     .stat-label {
       font-size: 0.625rem;
@@ -887,23 +970,33 @@
   <!-- HERO -->
   <section class="hero">
     <div class="hero-inner">
-      <div class="hero-eyebrow fade-up">Sveriges värdetopplista över alkohol</div>
-      <h1 class="hero-title fade-up" style="animation-delay: 0.05s">Bäst APK<br>just nu.</h1>
-      <p class="hero-subtitle fade-up" style="animation-delay: 0.15s">
-        APK = <strong>alkohol per krona</strong>. Vi rangordnar Systembolagets sortiment efter hur mycket ren alkohol du får för pengarna – mätt i milliliter per krona.
-      </p>
-      <div class="stats fade-up" style="animation-delay: 0.25s">
-        <div>
-          <div class="stat-label">Produkter</div>
-          <div class="stat-value num-tabular" id="statCount">–</div>
+      <div class="hero-grid">
+        <div class="hero-text">
+          <div class="hero-eyebrow fade-up">Sveriges värdetopplista över alkohol</div>
+          <h1 class="hero-title fade-up" style="animation-delay: 0.05s">Bäst APK<br>just nu.</h1>
+          <p class="hero-subtitle fade-up" style="animation-delay: 0.15s">
+            APK = <strong>alkohol per krona</strong>. Vi rangordnar Systembolagets sortiment efter hur mycket ren alkohol du får för pengarna – mätt i milliliter per krona.
+          </p>
+          <div class="stats fade-up" style="animation-delay: 0.25s">
+            <div>
+              <div class="stat-label">Produkter</div>
+              <div class="stat-value num-tabular" id="statCount">–</div>
+            </div>
+            <div>
+              <div class="stat-label">Kategorier</div>
+              <div class="stat-value num-tabular">3</div>
+            </div>
+            <div>
+              <div class="stat-label">Bästa APK</div>
+              <div class="stat-value highlight num-tabular" id="statBest">–<span class="stat-suffix">ml/kr</span></div>
+            </div>
+          </div>
         </div>
-        <div>
-          <div class="stat-label">Kategorier</div>
-          <div class="stat-value num-tabular">3</div>
-        </div>
-        <div>
-          <div class="stat-label">Bästa APK</div>
-          <div class="stat-value highlight num-tabular" id="statBest">–<span class="stat-suffix">ml/kr</span></div>
+        <div class="chart fade-up" style="animation-delay: 0.35s">
+          <div class="chart-eyebrow">Sortimentet i siffror</div>
+          <div class="chart-title">Så fördelar sig APK över sortimentet</div>
+          <div class="chart-subtitle">De flesta drycker landar mellan 0,2 och 0,6 ml/kr. Bara en handfull når topparna.</div>
+          <div class="chart-svg-wrap" id="chartContainer"><!-- SVG renderas här i JS --></div>
         </div>
       </div>
     </div>
@@ -971,7 +1064,7 @@
         <div>
           <div class="footer-col-title">Datakälla</div>
           <div class="footer-col-body">
-            Uppdateras dagligen baserat på Systembolagets aktuella sortiment.
+            Uppdateras varje vecka baserat på Systembolagets aktuella sortiment.
           </div>
         </div>
         <div>
@@ -1065,6 +1158,11 @@
         updateLiveIndicator();
         updateLastUpdated();
         render();
+
+        // Förladda hela sortimentet i bakgrunden så fördelningsgrafen
+        // kan rita en korrekt distribution. Detta påverkar inte FCP eftersom
+        // det körs efter att initial render redan är synlig.
+        loadSearchData().then(() => renderDistributionChart());
       } catch (err) {
         console.error('Datafel:', err);
         document.getElementById('loading').innerHTML =
@@ -1445,6 +1543,79 @@
       if (!p.rank || !p.categoryTotal) return '';
       const label = `#${formatNumber(p.rank)} av ${formatNumber(p.categoryTotal)} i ${p.category.toLowerCase()}`;
       return `<div class="product-rank-badge">${label}</div>`;
+    }
+
+    // ============================================
+    // FÖRDELNINGSGRAF (APK-histogram)
+    // ============================================
+    // Tar hela sortimentet och visar en bar chart där varje stapel är ett
+    // intervall ("bin") av APK-värden. De flesta drycker landar lågt; long
+    // tail åt höger visar "elit-APK". En markörlinje pekar ut bästa värdet.
+    function renderDistributionChart() {
+      if (!searchData || !searchData.length) return;
+      const container = document.getElementById('chartContainer');
+      if (!container) return;
+
+      // Bins om 0,1 ml/kr från 0 till 2,3 (max sortimentet brukar nå)
+      const BIN_WIDTH = 0.1;
+      const BIN_COUNT = 24;
+      const bins = new Array(BIN_COUNT).fill(0);
+      let bestApk = 0;
+      for (const p of searchData) {
+        if (p.apk > bestApk) bestApk = p.apk;
+        const idx = Math.min(BIN_COUNT - 1, Math.floor(p.apk / BIN_WIDTH));
+        bins[idx]++;
+      }
+      const maxCount = Math.max(...bins);
+
+      // SVG-dimensioner. ViewBox skalar responsivt till containern.
+      const W = 480;
+      const H = 260;
+      const PAD_TOP = 28;
+      const PAD_BOT = 38;
+      const PAD_L = 40;
+      const PAD_R = 16;
+      const chartW = W - PAD_L - PAD_R;
+      const chartH = H - PAD_TOP - PAD_BOT;
+      const barGap = 1.5;
+      const barW = (chartW / BIN_COUNT) - barGap;
+
+      // Bygg staplarna. Top 5% av APK-distributionen markeras med
+      // gulare färg ("long tail" = de superhöga utstickarna).
+      const tailThreshold = BIN_COUNT - Math.ceil(BIN_COUNT * 0.25); // sista ~25% av binnen
+      let bars = '';
+      for (let i = 0; i < BIN_COUNT; i++) {
+        const h = bins[i] === 0 ? 0 : Math.max(2, (bins[i] / maxCount) * chartH);
+        const x = PAD_L + i * (barW + barGap);
+        const y = PAD_TOP + (chartH - h);
+        const cls = i >= tailThreshold ? 'chart-bar is-tail' : 'chart-bar';
+        const tip = `${bins[i].toLocaleString('sv-SE')} produkter mellan APK ${(i*BIN_WIDTH).toFixed(1)}–${((i+1)*BIN_WIDTH).toFixed(1)}`;
+        bars += `<rect class="${cls}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="1.5"><title>${tip}</title></rect>`;
+      }
+
+      // X-axel-labels: 0, 0.5, 1.0, 1.5, 2.0
+      const xLabels = [0, 0.5, 1, 1.5, 2].map(v => {
+        const x = PAD_L + (v / (BIN_COUNT * BIN_WIDTH)) * chartW;
+        return `<text class="chart-axis-value" x="${x}" y="${H - 18}" text-anchor="middle">${v.toFixed(1)}</text>`;
+      }).join('');
+
+      // Markörlinje vid bästa APK
+      const bestX = PAD_L + (bestApk / (BIN_COUNT * BIN_WIDTH)) * chartW;
+      const markerLineX = Math.min(bestX, W - PAD_R - 1);
+      const labelAnchor = bestX > W - 80 ? 'end' : 'start';
+      const labelX = bestX > W - 80 ? markerLineX - 4 : markerLineX + 4;
+
+      const svg = `<svg class="chart-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Fördelning av APK över sortimentet">
+        <text class="chart-axis-label" x="${PAD_L}" y="14">ANTAL PRODUKTER</text>
+        ${bars}
+        <line class="chart-marker-line" x1="${markerLineX.toFixed(1)}" y1="${PAD_TOP - 6}" x2="${markerLineX.toFixed(1)}" y2="${PAD_TOP + chartH}" />
+        <text class="chart-marker-text" x="${labelX.toFixed(1)}" y="${PAD_TOP + 4}" text-anchor="${labelAnchor}">Bästa: ${bestApk.toFixed(2)}</text>
+        <text class="chart-marker-sub" x="${labelX.toFixed(1)}" y="${PAD_TOP + 16}" text-anchor="${labelAnchor}">ML/KR</text>
+        <line x1="${PAD_L}" y1="${PAD_TOP + chartH + 0.5}" x2="${W - PAD_R}" y2="${PAD_TOP + chartH + 0.5}" stroke="rgba(244, 211, 94, 0.18)" stroke-width="1" />
+        ${xLabels}
+        <text class="chart-axis-label" x="${W - PAD_R}" y="${H - 4}" text-anchor="end">APK (ML / KR)</text>
+      </svg>`;
+      container.innerHTML = svg;
     }
 
     // ============================================
