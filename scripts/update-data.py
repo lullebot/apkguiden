@@ -270,6 +270,27 @@ def main() -> int:
     transformed = [transform(p) for p in filtered]
     transformed = [p for p in transformed if p["apk"] > 0 and p["name"]]
 
+    # ===== Ta bort dubbletter (samma produktnummer) =====
+    # API:ets paginering kan i sällsynta fall returnera samma produkt på två
+    # sidor. Vi behåller FÖRSTA förekomsten av varje id och loggar hur många
+    # dubbletter som togs bort. Produkter utan id (saknar produktnummer)
+    # lämnas orörda.
+    seen_ids = set()
+    deduped = []
+    dup_count = 0
+    for p in transformed:
+        pid = p.get("id")
+        if pid is None:
+            deduped.append(p)
+            continue
+        if pid in seen_ids:
+            dup_count += 1
+            continue
+        seen_ids.add(pid)
+        deduped.append(p)
+    transformed = deduped
+    print(f"Dubbletter borttagna (samma produktnummer): {dup_count:,}", flush=True)
+
     # ===== Markera nyinkomna produkter =====
     # En produkt vars id inte fanns i förra körningens search-data.json räknas
     # som nyinkommen. Vi sätter "new": True endast på de nya produkterna (övriga
