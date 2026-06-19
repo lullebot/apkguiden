@@ -182,10 +182,10 @@
 
     .stats {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 1rem;
       margin-top: 3rem;
-      max-width: 32rem;
+      max-width: 22rem;
     }
     @media (min-width: 768px) {
       .stats { gap: 2rem; }
@@ -946,6 +946,220 @@
       text-transform: uppercase;
       color: var(--yellow-muted);
     }
+
+    /* ============================================
+       MINI-KORT: bäst i varje kategori (snabbkoll)
+       ============================================ */
+    .mini-cards-section {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+    .mini-cards-eyebrow {
+      font-size: 0.625rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--yellow-bright);
+      margin-bottom: 0.875rem;
+    }
+    .mini-cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.875rem;
+    }
+    @media (min-width: 768px) {
+      .mini-cards { grid-template-columns: repeat(3, 1fr); }
+    }
+    .mini-card {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      padding: 0.875rem 1rem;
+      border-radius: 0.875rem;
+      background: var(--green-light);
+      border: 1px solid rgba(244, 211, 94, 0.14);
+      color: var(--yellow);
+      font-family: inherit;
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+    .mini-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(244, 211, 94, 0.4);
+      background: #1f6149;
+    }
+    .mini-card-cat {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.625rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--yellow-muted);
+      margin-bottom: 0.25rem;
+    }
+    .mini-card-cat svg { width: 13px; height: 13px; }
+    .mini-card-image-wrap {
+      flex-shrink: 0;
+      width: 3rem;
+      height: 3.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mini-card-image { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .mini-card-image-fallback { width: 1.75rem; height: 1.75rem; color: var(--yellow-muted); opacity: 0.5; }
+    .mini-card-body { min-width: 0; flex: 1; }
+    .mini-card-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.25;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .mini-card-stats {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+    }
+    .mini-card-apk {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--yellow-bright);
+      font-variant-numeric: tabular-nums;
+    }
+    .mini-card-apk-suffix { font-size: 0.625rem; font-weight: 600; color: var(--yellow-muted); }
+    .mini-card-price {
+      font-size: 0.75rem;
+      color: var(--cream);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ============================================
+       PRISFILTER (max-pris)
+       ============================================ */
+    .filter-bar {
+      max-width: var(--max-width);
+      margin: 0 auto 1.25rem;
+      padding: 1rem 1.25rem;
+      border-radius: 0.875rem;
+      background: rgba(244, 211, 94, 0.06);
+      border: 1px solid rgba(244, 211, 94, 0.12);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.875rem 1.25rem;
+    }
+    .filter-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--yellow-muted);
+      white-space: nowrap;
+    }
+    .price-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .price-preset {
+      padding: 0.3rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid rgba(244, 211, 94, 0.25);
+      background: transparent;
+      color: var(--yellow);
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+    }
+    .price-preset:hover { border-color: var(--yellow); }
+    .price-preset.active {
+      background: var(--yellow);
+      color: var(--green);
+      border-color: var(--yellow);
+    }
+    .price-slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex: 1;
+      min-width: 12rem;
+    }
+    .price-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(244, 211, 94, 0.25);
+      outline: none;
+    }
+    .price-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--yellow);
+      cursor: pointer;
+      border: 2px solid var(--green-dark);
+    }
+    .price-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--yellow);
+      cursor: pointer;
+      border: 2px solid var(--green-dark);
+    }
+    .price-input-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.5rem;
+      background: rgba(244, 211, 94, 0.1);
+      border: 1px solid rgba(244, 211, 94, 0.3);
+      transition: border-color 0.12s ease, background 0.12s ease;
+    }
+    .price-input-wrap:focus-within {
+      border-color: var(--yellow);
+      background: rgba(244, 211, 94, 0.16);
+    }
+    .price-input {
+      width: 2.75rem;
+      border: none;
+      background: transparent;
+      color: var(--yellow-bright);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    .price-input::-webkit-outer-spin-button,
+    .price-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .price-input::placeholder { color: var(--yellow-muted); font-weight: 600; }
+    .price-input-suffix {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--yellow-muted);
+    }
   </style>
 </head>
 <body>
@@ -975,15 +1189,17 @@
           <div class="stat-value num-tabular" id="statCount">–</div>
         </div>
         <div>
-          <div class="stat-label">Kategorier</div>
-          <div class="stat-value num-tabular">3</div>
-        </div>
-        <div>
           <div class="stat-label">Bästa APK</div>
           <div class="stat-value highlight num-tabular" id="statBest">–<span class="stat-suffix">ml/kr</span></div>
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- MINI-KORT: bäst i varje kategori -->
+  <section class="mini-cards-section" id="miniCardsSection" style="display: none;">
+    <div class="mini-cards-eyebrow">Snabbkoll – bäst i varje kategori</div>
+    <div class="mini-cards" id="miniCards"></div>
   </section>
 
   <!-- TABS (sticky) -->
@@ -1017,6 +1233,28 @@
         <h2 class="section-title" id="sectionTitle">Topp 20 totalt</h2>
       </div>
       <div class="sort-indicator">Sorterat efter APK ↓</div>
+    </div>
+
+    <!-- PRISFILTER -->
+    <div class="filter-bar" id="filterBar">
+      <span class="filter-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+        Max&nbsp;pris
+      </span>
+      <div class="price-presets" id="pricePresets">
+        <button class="price-preset active" type="button" data-max="">Alla priser</button>
+        <button class="price-preset" type="button" data-max="50">≤ 50 kr</button>
+        <button class="price-preset" type="button" data-max="100">≤ 100 kr</button>
+        <button class="price-preset" type="button" data-max="200">≤ 200 kr</button>
+        <button class="price-preset" type="button" data-max="500">≤ 500 kr</button>
+      </div>
+      <div class="price-slider-wrap">
+        <input type="range" class="price-slider" id="priceSlider" min="10" max="1000" step="5" value="1000" aria-label="Max pris i kronor">
+        <div class="price-input-wrap">
+          <input type="number" inputmode="numeric" min="0" step="1" class="price-input" id="priceInput" placeholder="Alla" aria-label="Max pris i kronor – skriv exakt belopp">
+          <span class="price-input-suffix">kr</span>
+        </div>
+      </div>
     </div>
 
     <div id="loading" class="loading">
@@ -1120,6 +1358,18 @@
     let selectedSubcategory = null; // null = visa alla i huvudkategorin
     let dataMeta = { updated: null, count: 0 };
 
+    // Prisfilter: maxPrice = null betyder ingen gräns. Slidern går till
+    // SLIDER_MAX; högsta läget tolkas som "Alla priser" (ingen gräns).
+    const SLIDER_MAX = 1000;
+    let maxPrice = null;
+
+    // Kategorierna som visas som mini-kort (bäst i varje), i denna ordning.
+    const MINI_CARD_CATS = [
+      { key: 'Vin', icon: 'wine' },
+      { key: 'Öl', icon: 'beer' },
+      { key: 'Sprit', icon: 'droplets' },
+    ];
+
     // Söktillstånd – search-data.json laddas lazy vid första sökningen
     let searchData = null;          // null = ej laddad, [] = laddad men tom
     let searchDataPromise = null;   // pågående fetch
@@ -1132,6 +1382,7 @@
     async function init() {
       renderTabs();
       setupSearch();
+      setupPriceFilter();
       try {
         const response = await fetch('data.json', { cache: 'no-store' });
         if (!response.ok) throw new Error('Kunde inte hämta data');
@@ -1290,11 +1541,130 @@
     // RENDERING – topplista eller sökresultat
     // ============================================
     function render() {
+      const miniSection = document.getElementById('miniCardsSection');
       if (searchQuery) {
+        // Mini-korten är mindre relevanta vid sök – göm dem.
+        if (miniSection) miniSection.style.display = 'none';
         renderSearchResults();
       } else {
+        renderMiniCards();
         renderTopList();
       }
+    }
+
+    // ============================================
+    // PRISFILTER (max-pris)
+    // ============================================
+    function setupPriceFilter() {
+      const slider = document.getElementById('priceSlider');
+      const presets = document.getElementById('pricePresets');
+      const input = document.getElementById('priceInput');
+
+      slider.addEventListener('input', () => {
+        const v = parseInt(slider.value, 10);
+        maxPrice = v >= SLIDER_MAX ? null : v;
+        syncPriceUI();      // skriver om input-fältet + presets
+        render();
+      });
+
+      // Eget belopp: användaren skriver exakt maxpris. Tomt fält = alla priser.
+      // Vi rör INTE input.value här (det skulle störa skrivandet) – bara slider,
+      // presets och listan uppdateras. Belopp över sliderns max tillåts.
+      input.addEventListener('input', () => {
+        const raw = input.value.trim();
+        const v = parseInt(raw, 10);
+        maxPrice = (raw === '' || isNaN(v) || v <= 0) ? null : v;
+        slider.value = maxPrice == null ? SLIDER_MAX : Math.max(slider.min, Math.min(maxPrice, SLIDER_MAX));
+        syncActivePresets();
+        render();
+      });
+
+      presets.querySelectorAll('.price-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const raw = btn.dataset.max;
+          maxPrice = raw ? parseInt(raw, 10) : null;
+          slider.value = maxPrice == null ? SLIDER_MAX : Math.min(maxPrice, SLIDER_MAX);
+          syncPriceUI();
+          render();
+        });
+      });
+      syncPriceUI();
+    }
+
+    // Markera den preset-knapp som matchar nuvarande maxPrice (om någon).
+    function syncActivePresets() {
+      document.querySelectorAll('.price-preset').forEach(btn => {
+        const raw = btn.dataset.max;
+        const presetVal = raw ? parseInt(raw, 10) : null;
+        btn.classList.toggle('active', presetVal === maxPrice);
+      });
+    }
+
+    // Full synk: skriver om belopps-fältet OCH presets. Används när ändringen
+    // INTE kommer från själva input-fältet (slider/preset), så att vi kan visa
+    // det aktuella beloppet utan att störa pågående inmatning.
+    function syncPriceUI() {
+      const input = document.getElementById('priceInput');
+      input.value = maxPrice == null ? '' : maxPrice;
+      syncActivePresets();
+    }
+
+    // Applicera prisgränsen på en produktlista.
+    function applyPriceFilter(list) {
+      if (maxPrice == null) return list;
+      return list.filter(p => (p.price || 0) <= maxPrice);
+    }
+
+    // ============================================
+    // MINI-KORT: bäst i varje kategori
+    // ============================================
+    function renderMiniCards() {
+      const section = document.getElementById('miniCardsSection');
+      const wrap = document.getElementById('miniCards');
+      if (!section || !wrap || !allProducts.length) return;
+
+      const cards = MINI_CARD_CATS.map(cat => {
+        // allProducts är redan APK-sorterad → första träffen inom prisgränsen
+        // är bäst APK i kategorin.
+        const best = allProducts.find(p => p.category === cat.key && (maxPrice == null || (p.price || 0) <= maxPrice));
+        return best ? renderMiniCard(best, cat) : '';
+      }).filter(Boolean).join('');
+
+      if (!cards) {
+        section.style.display = 'none';
+        return;
+      }
+      wrap.innerHTML = cards;
+      section.style.display = 'block';
+
+      wrap.querySelectorAll('.mini-card').forEach(el => {
+        el.addEventListener('click', () => {
+          selectedCategory = el.dataset.cat;
+          selectedSubcategory = null;
+          renderTabs();
+          render();
+          window.scrollTo({ top: document.querySelector('.tabs-wrap').offsetTop - 1, behavior: 'smooth' });
+        });
+      });
+    }
+
+    function renderMiniCard(p, cat) {
+      const img = p.image
+        ? `<img class="mini-card-image" src="${escapeHtml(p.image)}_200.png" srcset="${escapeHtml(p.image)}_200.png 1x, ${escapeHtml(p.image)}_400.png 2x" alt="" loading="lazy" onerror="this.style.display='none'">`
+        : `<svg class="mini-card-image-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8"></path><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"></path></svg>`;
+      return `
+        <button class="mini-card" type="button" data-cat="${escapeHtml(cat.key)}" aria-label="Visa topplistan för ${escapeHtml(cat.key)}">
+          <div class="mini-card-image-wrap">${img}</div>
+          <div class="mini-card-body">
+            <div class="mini-card-cat">${ICONS[cat.icon]}${escapeHtml(cat.key)}</div>
+            <div class="mini-card-name">${escapeHtml(p.name)}${renderNewBadge(p)}</div>
+            <div class="mini-card-stats">
+              <span class="mini-card-apk num-tabular">${p.apk.toFixed(2)}<span class="mini-card-apk-suffix"> ml/kr</span></span>
+              <span class="mini-card-price">${formatPrice(p.price)} kr</span>
+            </div>
+          </div>
+        </button>
+      `;
     }
 
     function renderSearchResults() {
@@ -1335,7 +1705,7 @@
       const q = searchQuery.toLowerCase();
       // Sök ALLTID i hela sortimentet, oavsett vilken kategori/subkategori
        // som råkar vara vald. Aktiv kategori bara stylar UI, inte resultaten.
-      const matches = searchData.filter(p => p._lc.includes(q));
+      const matches = applyPriceFilter(searchData.filter(p => p._lc.includes(q)));
       // searchData är redan APK-sorterad från servern
       const top = matches.slice(0, 50);
 
@@ -1364,7 +1734,9 @@
       // Återställ rubriker (kan ha ändrats av sökläget)
       document.querySelector('.section-eyebrow').textContent = 'Topplista';
       document.querySelector('.sort-indicator').textContent = 'Sorterat efter APK ↓';
-      document.getElementById('empty').textContent = 'Inga produkter i den här kategorin.';
+      document.getElementById('empty').textContent = maxPrice != null
+        ? `Inga produkter under ${formatNumber(maxPrice)} kr i den här kategorin. Höj prisgränsen för fler.`
+        : 'Inga produkter i den här kategorin.';
 
       // Filtrera baserat på huvudkategori + ev. underkategori
       let filtered = selectedCategory === 'Alla'
@@ -1373,6 +1745,7 @@
       if (selectedSubcategory) {
         filtered = filtered.filter(p => matchesSubcategory(p, selectedSubcategory));
       }
+      filtered = applyPriceFilter(filtered);
       const top = filtered.slice(0, 20);
 
       // Statistik – TOTAL antal i hela datasetet, och GLOBAL bästa APK (oavsett filter)
