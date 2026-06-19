@@ -711,6 +711,23 @@
       letter-spacing: 0.02em;
       font-variant-numeric: tabular-nums;
     }
+    /* "Nyinkommen"-badge: produkt som dök upp i sortimentet sedan förra veckan */
+    .new-badge {
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 0.5rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: var(--yellow);
+      color: var(--green);
+      font-size: 0.625rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1.3;
+      white-space: nowrap;
+      transform: translateY(-1px);
+    }
     .product-pills {
       display: none;
       flex-wrap: wrap;
@@ -1425,7 +1442,7 @@
           <div class="podium-body">
             <div class="podium-image-wrap">${renderPodiumImage(p)}</div>
             <div class="podium-text">
-              <div class="podium-name">${escapeHtml(p.name)}</div>
+              <div class="podium-name">${escapeHtml(p.name)}${renderNewBadge(p)}</div>
               <div class="podium-meta">${escapeHtml(p.producer || '')} ${p.country ? '· ' + escapeHtml(p.country) : ''}</div>
               <div class="pills">
                 ${p.subcategory ? `<span class="pill">${escapeHtml(p.subcategory)}</span>` : ''}
@@ -1469,7 +1486,7 @@
           <div class="product-rank num-tabular">${String(rank).padStart(2, '0')}</div>
           <div class="product-image-wrap">${renderProductImage(p)}</div>
           <div class="product-info">
-            <div class="product-name">${escapeHtml(p.name)}</div>
+            <div class="product-name">${escapeHtml(p.name)}${renderNewBadge(p)}</div>
             <div class="product-meta">${escapeHtml(p.producer || '')} ${p.subcategory ? '· ' + escapeHtml(p.subcategory) : ''}</div>
             ${rankBadge}
             <div class="product-pills">
@@ -1511,6 +1528,13 @@
         ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg
         ><span class="product-link-text-mobile">Köp</span
         ><span class="product-link-text-full">Systembolaget</span></a>`;
+    }
+
+    // "Nyinkommen"-badge: visas för produkter som dykt upp i sortimentet
+    // sedan förra veckans uppdatering (flaggade med "new": true i datan).
+    function renderNewBadge(p) {
+      if (!p.new) return '';
+      return `<span class="new-badge">Nyinkommen</span>`;
     }
 
     // Rank-badge: alltid "#X av Y i kategori" – konsekvent format
