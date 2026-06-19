@@ -12,7 +12,8 @@ Skriptet:
   1. Paginerar igenom hela sortimentet via productsearch-endpointen.
   2. Beräknar APK = (volym_ml × alkoholhalt%) / pris_kr.
   3. Filtrerar bort utgångna, lågalkoholhaltiga och saknade produkter.
-  4. Skriver två filer:
+  4. Markerar nyinkomna produkter (jämfört med förra körningen).
+  5. Skriver två filer:
        - data.json (~500 KB): topp N per huvudkategori, för snabb topplista.
        - search-data.json (~5–7 MB, ~1.5–2 MB gzippad): hela sortimentet,
          lazy-loadas av sajten när användaren börjar söka.
@@ -143,6 +144,33 @@ def is_eligible(product: dict) -> bool:
     return True
 
 
+def load_previous_ids() -> set:
+    """Läs förra körningens search-data.json och returnera mängden produkt-id.
+
+    Används för att avgöra vilka produkter som är NYINKOMNA: en produkt vars id
+    inte fanns i förra veckans fil räknas som ny. Första gången skriptet körs
+    (ingen tidigare fil finns) returneras en tom mängd, vilket gör att inget
+    markeras som nytt – då etableras bara en baslinje.
+    """
+    if not SEARCH_OUTPUT_PATH.exists():
+        print("Ingen tidigare search-data.json hittad – etablerar baslinje "
+              "(inget markeras som nyinkommet denna körning).", flush=True)
+        return set()
+    try:
+        with SEARCH_OUTPUT_PATH.open(encoding="utf-8") as f:
+            prev = json.load(f)
+        prev_ids = {
+            str(p["id"]) for p in prev.get("products", []) if p.get("id")
+        }
+        print(f"Läste {len(prev_ids):,} produkt-id från förra körningen.", flush=True)
+        return prev_ids
+    except Exception as e:
+        # Hellre inga nya-badges än att krascha hela uppdateringen.
+        print(f"VARNING: kunde inte läsa tidigare search-data.json ({e}); "
+              "inget markeras som nyinkommet denna körning.", flush=True)
+        return set()
+
+
 def fetch_page(page: int) -> dict:
     """Hämta en sida med produkter från Systembolagets API."""
     url = f"{API_BASE}?page={page}&size={PAGE_SIZE}"
@@ -212,6 +240,10 @@ def fetch_assortment() -> list[dict]:
 
 
 def main() -> int:
+    # Läs förra körningens id INNAN vi skriver över filerna, så vi kan
+    # markera nyinkomna produkter.
+    prev_ids = load_previous_ids()
+
     try:
         assortment = fetch_assortment()
     except Exception as e:
@@ -237,6 +269,19 @@ def main() -> int:
 
     transformed = [transform(p) for p in filtered]
     transformed = [p for p in transformed if p["apk"] > 0 and p["name"]]
+
+    # ===== Markera nyinkomna produkter =====
+    # En produkt vars id inte fanns i förra körningens search-data.json räknas
+    # som nyinkommen. Vi sätter "new": True endast på de nya produkterna (övriga
+    # lämnas utan fältet för att hålla filstorleken nere). Badgen försvinner
+    # automatiskt vid nästa körning, eftersom id:t då finns i prev_ids.
+    new_count = 0
+    if prev_ids:
+        for p in transformed:
+            if p["id"] and str(p["id"]) not in prev_ids:
+                p["new"] = True
+                new_count += 1
+    print(f"Nyinkomna sedan förra körningen: {new_count:,}", flush=True)
 
     # ===== Tiebreaker-sortering =====
     # APK desc → pris asc → namn asc. Samma APK? Då vinner billigare produkt.
