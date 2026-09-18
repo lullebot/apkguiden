@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>apkguiden.se – Bäst alkohol per krona på Systembolaget</title>
-  <meta name="description" content="Topplista över Systembolagets hela sortiment rangordnat efter alkohol per krona (APK). Sök vilken dryck som helst och jämför vin, öl och sprit. Uppdateras varje vecka.">
+  <meta name="description" content="Bästa APK på Systembolaget – topplista över hela sortimentet rangordnat efter alkohol per krona (APK). Sök vilken dryck som helst och jämför vin, öl och sprit. Uppdateras varje vecka.">
   <!-- Favicon (riktiga filer i sajtens rot, inte data:-URI - krävs för att Google ska visa loggan) -->
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -21,7 +21,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="apkguiden.se">
   <meta property="og:title" content="apkguiden.se – Bäst alkohol per krona på Systembolaget">
-  <meta property="og:description" content="Topplista över Systembolagets hela sortiment rangordnat efter alkohol per krona (APK). Sök vilken dryck som helst och jämför vin, öl och sprit. Uppdateras varje vecka.">
+  <meta property="og:description" content="Bästa APK på Systembolaget – topplista över hela sortimentet rangordnat efter alkohol per krona (APK). Sök vilken dryck som helst och jämför vin, öl och sprit. Uppdateras varje vecka.">
   <meta property="og:url" content="https://apkguiden.se/">
   <meta property="og:image" content="https://apkguiden.se/favicon-512.png">
   <meta property="og:locale" content="sv_SE">
@@ -36,6 +36,62 @@
     "url": "https://apkguiden.se/",
     "description": "Topplista över Systembolagets sortiment rangordnat efter alkohol per krona (APK).",
     "inLanguage": "sv-SE"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Vad betyder APK (alkohol per krona)?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "APK står för alkohol per krona och är ett värdemått som visar hur mycket ren alkohol du får för varje krona du betalar. Måttet räknas fram som (volym i ml × alkoholhalt i %) ÷ pris i kr, och anges i milliliter ren alkohol per krona."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Vilken är bäst APK på Systembolaget just nu?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Den produkt som har högst APK just nu ligger överst i topplistan på apkguiden.se. Listan uppdateras varje vecka utifrån Systembolagets aktuella sortiment och priser, och kan filtreras på vin, öl, sprit eller ett eget prisintervall för att se bästa APK inom just den kategorin."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Hur ofta uppdateras listan över bästa APK?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "apkguiden.se hämtar ny prisdata från Systembolaget varje vecka, så topplistan speglar aktuella priser och lagerstatus."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Är hög APK samma sak som bra alkohol?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Nej. APK mäter enbart hur mycket ren alkohol du får per krona – inte kvalitet, smak eller hur en dryck är tillverkad. En produkt med hög APK kan vara ett bra pris för pengarna rent volymmässigt, men det säger inget om hur den smakar eller passar ett visst tillfälle."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Varifrån kommer priserna och sortimentet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "All data hämtas från Systembolagets officiella sortiment. Kontrollera alltid aktuellt pris och tillgänglighet på systembolaget.se innan köp, eftersom priser och lagerstatus kan ändras mellan uppdateringarna."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Gäller åldersgräns för att se listan?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ja. Sidan riktar sig till dig som är 18 år eller äldre, i linje med Systembolagets åldersgräns för alkoholköp. Drick alltid ansvarsfullt."
+        }
+      }
+    ]
   }
   </script>
 
@@ -1160,6 +1216,50 @@
       font-weight: 600;
       color: var(--yellow-muted);
     }
+
+    /* ============================================
+       FAQ
+       ============================================ */
+    .faq-section {
+      margin-top: 3rem;
+    }
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+    .faq-item {
+      background-color: var(--green-light);
+      border: 1.5px solid rgba(244, 211, 94, 0.16);
+      border-radius: 1rem;
+      padding: 0 1.25rem;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 1.1rem 0;
+      font-weight: 600;
+      color: var(--yellow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after {
+      content: '+';
+      flex-shrink: 0;
+      font-size: 1.25rem;
+      color: var(--yellow-muted);
+    }
+    .faq-item[open] summary::after { content: '–'; }
+    .faq-item p {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--cream);
+      margin: 0 0 1.1rem;
+    }
   </style>
 </head>
 <body>
@@ -1277,6 +1377,37 @@
         </div>
       </div>
     </div>
+
+    <section class="faq-section" id="faq" aria-labelledby="faqHeading">
+      <div class="section-eyebrow">FAQ</div>
+      <h2 class="section-title" id="faqHeading">Vanliga frågor om APK</h2>
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>Vad betyder APK (alkohol per krona)?</summary>
+          <p>APK står för alkohol per krona och är ett värdemått som visar hur mycket ren alkohol du får för varje krona du betalar. Måttet räknas fram som (volym i ml × alkoholhalt i %) ÷ pris i kr, och anges i milliliter ren alkohol per krona.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Vilken är bäst APK på Systembolaget just nu?</summary>
+          <p>Den produkt som har högst APK just nu ligger överst i topplistan ovan. Listan uppdateras varje vecka utifrån Systembolagets aktuella sortiment och priser, och du kan filtrera på vin, öl, sprit eller ett eget prisintervall för att se bästa APK inom just den kategorin.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Hur ofta uppdateras listan över bästa APK?</summary>
+          <p>apkguiden.se hämtar ny prisdata från Systembolaget varje vecka, så topplistan och alla produkter speglar aktuella priser och lagerstatus.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Är hög APK samma sak som bra alkohol?</summary>
+          <p>Nej. APK mäter enbart hur mycket ren alkohol du får per krona – inte kvalitet, smak eller hur en dryck är tillverkad. En produkt med hög APK kan vara ett bra pris för pengarna rent volymmässigt, men det säger inget om hur den smakar eller passar ett visst tillfälle.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Varifrån kommer priserna och sortimentet?</summary>
+          <p>All data hämtas från Systembolagets officiella sortiment. Kontrollera alltid aktuellt pris och tillgänglighet på <a href="https://systembolaget.se" target="_blank" rel="noopener" style="color:var(--yellow-bright);">systembolaget.se</a> innan köp, eftersom priser och lagerstatus kan ändras mellan uppdateringarna.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Gäller åldersgräns för att se listan?</summary>
+          <p>Ja. Sidan riktar sig till dig som är 18 år eller äldre, i linje med Systembolagets åldersgräns för alkoholköp. Drick alltid ansvarsfullt.</p>
+        </details>
+      </div>
+    </section>
   </main>
 
   <!-- FOOTER -->
