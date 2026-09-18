@@ -211,6 +211,11 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--cream);
+      /* Flexbox centers by line-box height, but the bold lowercase logo's
+         x-height sits visually lower than this all-caps text's own box
+         (no descenders to balance it out) — nudge down slightly so it
+         lines up with the logo's optical center instead of its geometric one. */
+      transform: translateY(2px);
     }
     @media (min-width: 768px) {
       .live-indicator { display: flex; }
