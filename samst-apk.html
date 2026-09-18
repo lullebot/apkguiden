@@ -316,6 +316,15 @@
       text-transform: uppercase;
       transform: rotate(-2.5deg);
     }
+    /* .fade-up's own keyframes animate "transform" (translateY), which would
+       otherwise override the stamp's permanent rotation for the animation's
+       0.5s duration, making it flash straight before snapping tilted. Give
+       it its own keyframes that keep the rotation applied throughout. */
+    .stamp.fade-up { animation-name: fadeUpStamp; }
+    @keyframes fadeUpStamp {
+      from { opacity: 0; transform: translateY(12px) rotate(-2.5deg); }
+      to { opacity: 1; transform: translateY(0) rotate(-2.5deg); }
+    }
   </style>
 </head>
 <body>
@@ -343,7 +352,7 @@
       <div class="hero-eyebrow fade-up">Systembolagets hall of shame</div>
       <h1 class="hero-title fade-up" style="animation-delay: 0.05s">Sämst APK<br>just nu.</h1>
       <p class="hero-subtitle fade-up" style="animation-delay: 0.15s">
-        Samma formel som på <a href="/">apkguiden.se</a>, fast baklänges. Här är sortimentets dyraste alkohol per krona räknat – <strong>inte</strong> en lista över dålig dryck.
+        Samma formel som på <a href="/">apkguiden.se</a>, fast baklänges. Här är sortimentets dyraste alkohol per krona räknat.
       </p>
       <div class="stats fade-up" style="animation-delay: 0.25s">
         <div>
