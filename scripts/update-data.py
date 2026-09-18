@@ -155,6 +155,43 @@ def is_eligible(product: dict) -> bool:
     return True
 
 
+def dedupe_lookalikes(products: list[dict]) -> tuple[list[dict], int]:
+    """Ta bort produkter som ser identiska ut för besökaren men har olika
+    artikelnummer hos Systembolaget (t.ex. Arboga 10,2, Sofiero Original Guld,
+    Three Hearts, Pripps Blå Extra – samma öl, två artikelnummer).
+
+    Regel: samma namn + samma producent + samma volym = dubblett. Vi behåller
+    den med högst APK, och vid lika APK den med lägst pris (sista utväg:
+    lägst id, så resultatet alltid blir detsamma oavsett input-ordning).
+    Olika volymer räknas som olika produkter (t.ex. 750 ml flaska vs 3 L box).
+
+    Returnerar (ny lista, antal borttagna).
+    """
+    def norm(s) -> str:
+        return re.sub(r"\s+", " ", (s or "").strip().lower())
+
+    def better(a: dict, b: dict) -> bool:
+        """True om a ska behållas framför b."""
+        if a["apk"] != b["apk"]:
+            return a["apk"] > b["apk"]
+        pa = a["price"] if a["price"] is not None else float("inf")
+        pb = b["price"] if b["price"] is not None else float("inf")
+        if pa != pb:
+            return pa < pb
+        return str(a.get("id") or "") < str(b.get("id") or "")
+
+    best: dict[tuple, dict] = {}
+    for p in products:
+        key = (norm(p.get("name")), norm(p.get("producer")), p.get("volume"))
+        cur = best.get(key)
+        if cur is None or better(p, cur):
+            best[key] = p
+
+    keep_ids = {id(p) for p in best.values()}
+    result = [p for p in products if id(p) in keep_ids]
+    return result, len(products) - len(result)
+
+
 def load_previous_ids() -> set:
     """Läs förra körningens search-data.json och returnera mängden produkt-id.
 
@@ -448,6 +485,11 @@ def main() -> int:
         deduped.append(p)
     transformed = deduped
     print(f"Dubbletter borttagna (samma produktnummer): {dup_count:,}", flush=True)
+
+    # ===== Ta bort "look-alike"-dubbletter (samma namn + producent + volym) =====
+    # Olika artikelnummer men identiska för besökaren. Se dedupe_lookalikes().
+    transformed, lookalike_count = dedupe_lookalikes(transformed)
+    print(f"Dubbletter borttagna (samma namn+producent+volym): {lookalike_count:,}", flush=True)
 
     # ===== Markera nyinkomna produkter =====
     # En produkt vars id inte fanns i förra körningens search-data.json räknas
