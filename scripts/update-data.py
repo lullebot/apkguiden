@@ -22,7 +22,9 @@ Hela paginerings-cykeln tar ca 3–5 minuter. Det är fine i en nattlig
 GitHub Action men vill man köra lokalt: ha tålamod.
 """
 
+import html
 import json
+import re
 import sys
 import time
 import urllib.request
@@ -43,6 +45,15 @@ OUTPUT_PATH = Path(__file__).resolve().parent.parent / "data.json"
 
 # Var search-data.json hamnar (hela sortimentet, lazy-loadas av sajten)
 SEARCH_OUTPUT_PATH = Path(__file__).resolve().parent.parent / "search-data.json"
+
+# index.html/sitemap.xml – uppdateras med statisk SEO-text/ItemList-JSON-LD
+# respektive dagens datum, se update_index_html() och touch_sitemap_lastmod().
+INDEX_HTML_PATH = Path(__file__).resolve().parent.parent / "index.html"
+SITEMAP_PATH = Path(__file__).resolve().parent.parent / "sitemap.xml"
+
+# Hur många av topplistans produkter som skrivs in som statisk text/JSON-LD
+# i index.html, för sökmotorer som inte (fullt ut, eller i tid) kör JS.
+SEO_STATIC_TOP_N = 20
 
 # Antal produkter att behålla per huvudkategori
 TOP_PER_CATEGORY = 500
@@ -239,6 +250,153 @@ def fetch_assortment() -> list[dict]:
     return all_products
 
 
+def format_price(price) -> str:
+    """Svensk talformatering: mellanslag som tusentalsavgränsare, inga
+    decimaler för jämna kronor (priser från API:et har inga ören ändå)."""
+    if price is None:
+        return "?"
+    try:
+        value = float(price)
+    except (TypeError, ValueError):
+        return "?"
+    if value.is_integer():
+        return f"{int(value):,}".replace(",", " ")
+    return f"{value:,.2f}".replace(",", " ")
+
+
+def render_static_seo_html(top_overall: list[dict], category_leaders: list[tuple]) -> str:
+    """Bygg den statiska, textbaserade SEO-fallbacken som sökmotorer och
+    JS-lösa besökare ser (se SEO_STATIC_CONTENT_START/END i index.html).
+    Körs vid varje körning så innehållet alltid matchar data.json – annars
+    är hela poängen (att sökmotorn ser RIKTIG, aktuell data) borta.
+    """
+    parts = []
+    parts.append("<h2>Bäst APK på Systembolaget just nu</h2>")
+    parts.append(
+        "<p>APK (alkohol per krona) visar hur mycket ren alkohol du får för "
+        "pengarna. Listan nedan uppdateras varje vecka utifrån Systembolagets "
+        "aktuella sortiment och priser.</p>"
+    )
+
+    if category_leaders:
+        parts.append("<h3>Bäst i varje kategori</h3>")
+        parts.append("<ul>")
+        for cat, p in category_leaders:
+            parts.append(
+                f"<li>{html.escape(cat)}: {html.escape(p.get('name') or '')} – "
+                f"{p['apk']:.2f} ml/kr, {format_price(p.get('price'))} kr</li>"
+            )
+        parts.append("</ul>")
+
+    if top_overall:
+        parts.append("<h3>Topplista – bästa APK totalt</h3>")
+        parts.append("<ol>")
+        for p in top_overall:
+            producer = f" ({html.escape(p['producer'])})" if p.get("producer") else ""
+            parts.append(
+                f"<li>{html.escape(p.get('name') or '')}{producer} – "
+                f"{html.escape(p.get('category') or '')}, {format_price(p.get('price'))} kr, "
+                f"{p['apk']:.2f} ml ren alkohol per krona</li>"
+            )
+        parts.append("</ol>")
+
+    return "\n".join(parts)
+
+
+def render_itemlist_jsonld(top_overall: list[dict]) -> str:
+    """Bygg ItemList/Product-strukturerad data för topplistan (se
+    SEO_ITEMLIST_JSONLD_START/END i index.html)."""
+    items = []
+    for idx, p in enumerate(top_overall, start=1):
+        product: dict = {"@type": "Product", "name": p.get("name") or ""}
+        if p.get("producer"):
+            product["brand"] = {"@type": "Brand", "name": p["producer"]}
+        if p.get("price"):
+            product["offers"] = {
+                "@type": "Offer",
+                "price": str(p["price"]),
+                "priceCurrency": "SEK",
+                "availability": "https://schema.org/InStock",
+            }
+        items.append({"@type": "ListItem", "position": idx, "item": product})
+
+    data = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Bäst APK på Systembolaget",
+        "itemListElement": items,
+    }
+    return json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+
+
+def update_index_html(top_overall: list[dict], category_leaders: list[tuple]) -> None:
+    """Skriv in färsk statisk SEO-text + ItemList-JSON-LD i index.html,
+    mellan de fasta markörerna. Kraschar INTE skriptet om index.html eller
+    markörerna saknas – då hoppas SEO-uppdateringen bara över (varning i
+    loggen), datafilerna är redan skrivna vid det här laget."""
+    if not INDEX_HTML_PATH.exists():
+        print("VARNING: index.html hittades inte, hoppar över SEO-uppdatering.", file=sys.stderr)
+        return
+
+    doc = INDEX_HTML_PATH.read_text(encoding="utf-8")
+
+    static_html = render_static_seo_html(top_overall, category_leaders)
+    doc, n1 = re.subn(
+        r"(<!-- SEO_STATIC_CONTENT_START -->).*?(<!-- SEO_STATIC_CONTENT_END -->)",
+        lambda m: m.group(1) + static_html + m.group(2),
+        doc,
+        flags=re.S,
+    )
+    if n1 == 0:
+        print("VARNING: hittade inte SEO_STATIC_CONTENT-markörerna i index.html.", file=sys.stderr)
+
+    jsonld = render_itemlist_jsonld(top_overall)
+    doc, n2 = re.subn(
+        r'(<!-- SEO_ITEMLIST_JSONLD_START -->\s*<script type="application/ld\+json">)'
+        r".*?"
+        r'(</script>\s*<!-- SEO_ITEMLIST_JSONLD_END -->)',
+        lambda m: m.group(1) + "\n  " + jsonld + "\n  " + m.group(2),
+        doc,
+        flags=re.S,
+    )
+    if n2 == 0:
+        print("VARNING: hittade inte SEO_ITEMLIST_JSONLD-markörerna i index.html.", file=sys.stderr)
+
+    if n1 or n2:
+        INDEX_HTML_PATH.write_text(doc, encoding="utf-8")
+        print(f"Uppdaterade statisk SEO-text/ItemList-JSON-LD i {INDEX_HTML_PATH.name}.", flush=True)
+
+
+def touch_sitemap_lastmod() -> None:
+    """Sätt dagens datum som <lastmod> för STARTSIDAN i sitemap.xml – den
+    ändras faktiskt vid varje körning (nya priser/topplista/SEO-text), så
+    det är en korrekt uppdatering, inte ett spel för att lura Google.
+    Rör bara https://apkguiden.se/-blocket, övriga sidors (t.ex.
+    samst-apk.html) lastmod lämnas orörda."""
+    if not SITEMAP_PATH.exists():
+        print("VARNING: sitemap.xml hittades inte, hoppar över lastmod-uppdatering.", file=sys.stderr)
+        return
+
+    xml = SITEMAP_PATH.read_text(encoding="utf-8")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    def bump(m: re.Match) -> str:
+        return re.sub(r"<lastmod>.*?</lastmod>", f"<lastmod>{today}</lastmod>", m.group(0))
+
+    new_xml, n = re.subn(
+        r"<url>\s*<loc>https://apkguiden\.se/</loc>.*?</url>",
+        bump,
+        xml,
+        count=1,
+        flags=re.S,
+    )
+    if n:
+        SITEMAP_PATH.write_text(new_xml, encoding="utf-8")
+        print(f"Uppdaterade sitemap.xml: startsidans <lastmod> satt till {today}.", flush=True)
+    else:
+        print("VARNING: hittade inte startsidans <url>-block i sitemap.xml.", file=sys.stderr)
+
+
 def main() -> int:
     # Läs förra körningens id INNAN vi skriver över filerna, så vi kan
     # markera nyinkomna produkter.
@@ -371,6 +529,16 @@ def main() -> int:
 
     size_kb = OUTPUT_PATH.stat().st_size / 1024
     print(f"Skrev {len(final):,} produkter till {OUTPUT_PATH.name} ({size_kb:.0f} KB)", flush=True)
+
+    # ===== 3) SEO: statisk text + ItemList-JSON-LD i index.html, + sitemap =====
+    # by_cat[cat] är redan sorterad (se loopen ovan), så [0] = bäst APK i
+    # kategorin. Samma ordning som mini-korten på själva sajten.
+    category_leaders = [
+        (cat, by_cat[cat][0]) for cat in ("Vin", "Öl", "Sprit") if by_cat.get(cat)
+    ]
+    update_index_html(final[:SEO_STATIC_TOP_N], category_leaders)
+    touch_sitemap_lastmod()
+
     return 0
 
 
