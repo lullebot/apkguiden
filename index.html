@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>apkguiden.se – Bäst alkohol per krona på Systembolaget</title>
+  <title>Bäst APK på Systembolaget – alkohol per krona | apkguiden.se</title>
   <meta name="description" content="Bästa APK på Systembolaget – topplista över hela sortimentet rangordnat efter alkohol per krona (APK). Sök vilken dryck som helst och jämför vin, öl och sprit. Uppdateras varje vecka.">
   <!-- Favicon (riktiga filer i sajtens rot, inte data:-URI - krävs för att Google ska visa loggan) -->
   <link rel="icon" href="/favicon.ico" sizes="any">
@@ -20,7 +20,7 @@
   <!-- Open Graph / sociala medier -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="apkguiden.se">
-  <meta property="og:title" content="apkguiden.se – Bäst alkohol per krona på Systembolaget">
+  <meta property="og:title" content="Bäst APK på Systembolaget – alkohol per krona | apkguiden.se">
   <meta property="og:description" content="Bästa APK på Systembolaget – topplista över hela sortimentet rangordnat efter alkohol per krona (APK). Sök vilken dryck som helst och jämför vin, öl och sprit. Uppdateras varje vecka.">
   <meta property="og:url" content="https://apkguiden.se/">
   <meta property="og:image" content="https://apkguiden.se/favicon-512.png">
@@ -1233,74 +1233,30 @@
       color: var(--green);
       border-color: var(--yellow);
     }
-    .price-slider-wrap {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex: 1;
-      min-width: 12rem;
+    /* Mobil: etiketten ligger på egen rad och alla fem knappar delar en rad
+       (ingen radbrytning). Knapparna växer jämnt; på extremt smala skärmar
+       kan raden scrollas i sidled istället för att brytas. */
+    @media (max-width: 520px) {
+      .filter-bar { padding: 0.875rem 1rem; gap: 0.625rem; }
+      .price-presets {
+        flex: 1 1 100%;
+        flex-wrap: nowrap;
+        gap: 0.3rem;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .price-presets::-webkit-scrollbar { display: none; }
+      .price-preset {
+        flex: 1 0 auto;
+        padding: 0.35rem 0.4rem;
+        font-size: 0.7rem;
+        text-align: center;
+      }
     }
-    .price-slider {
-      -webkit-appearance: none;
-      appearance: none;
-      flex: 1;
-      height: 4px;
-      border-radius: 999px;
-      background: rgba(244, 211, 94, 0.25);
-      outline: none;
-    }
-    .price-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: var(--yellow);
-      cursor: pointer;
-      border: 2px solid var(--green-dark);
-    }
-    .price-slider::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: var(--yellow);
-      cursor: pointer;
-      border: 2px solid var(--green-dark);
-    }
-    .price-input-wrap {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.3rem 0.6rem;
-      border-radius: 0.5rem;
-      background: rgba(244, 211, 94, 0.1);
-      border: 1px solid rgba(244, 211, 94, 0.3);
-      transition: border-color 0.12s ease, background 0.12s ease;
-    }
-    .price-input-wrap:focus-within {
-      border-color: var(--yellow);
-      background: rgba(244, 211, 94, 0.16);
-    }
-    .price-input {
-      width: 2.75rem;
-      border: none;
-      background: transparent;
-      color: var(--yellow-bright);
-      font-family: inherit;
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-      outline: none;
-      -moz-appearance: textfield;
-    }
-    .price-input::-webkit-outer-spin-button,
-    .price-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .price-input::placeholder { color: var(--yellow-muted); font-weight: 600; }
-    .price-input-suffix {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--yellow-muted);
+    @media (max-width: 360px) {
+      .filter-bar { padding: 0.75rem 0.625rem; }
+      .price-presets { gap: 0.2rem; }
+      .price-preset { padding: 0.35rem 0.2rem; font-size: 0.65rem; }
     }
 
     /* ============================================
@@ -1434,18 +1390,11 @@
         Max&nbsp;pris
       </span>
       <div class="price-presets" id="pricePresets">
-        <button class="price-preset active" type="button" data-max="">Alla priser</button>
+        <button class="price-preset active" type="button" data-max="">Alla</button>
+        <button class="price-preset" type="button" data-max="25">≤ 25 kr</button>
         <button class="price-preset" type="button" data-max="50">≤ 50 kr</button>
         <button class="price-preset" type="button" data-max="100">≤ 100 kr</button>
-        <button class="price-preset" type="button" data-max="200">≤ 200 kr</button>
-        <button class="price-preset" type="button" data-max="500">≤ 500 kr</button>
-      </div>
-      <div class="price-slider-wrap">
-        <input type="range" class="price-slider" id="priceSlider" min="10" max="1000" step="5" value="1000" aria-label="Max pris i kronor">
-        <div class="price-input-wrap">
-          <input type="number" inputmode="numeric" min="0" step="1" class="price-input" id="priceInput" placeholder="Alla" aria-label="Max pris i kronor – skriv exakt belopp">
-          <span class="price-input-suffix">kr</span>
-        </div>
+        <button class="price-preset" type="button" data-max="250">≤ 250 kr</button>
       </div>
     </div>
 
@@ -1630,9 +1579,8 @@
     let topListVisibleCount = TOP_LIST_PAGE_SIZE;
     let topListFilterKey = null;
 
-    // Prisfilter: maxPrice = null betyder ingen gräns. Slidern går till
-    // SLIDER_MAX; högsta läget tolkas som "Alla priser" (ingen gräns).
-    const SLIDER_MAX = 1000;
+    // Prisfilter: maxPrice = null betyder ingen gräns ("Alla"). Annars sätts
+    // det av knapparna (data-max) i #pricePresets.
     let maxPrice = null;
 
     // Kategorierna som visas som mini-kort (bäst i varje), i denna ordning.
@@ -1835,39 +1783,17 @@
     // PRISFILTER (max-pris)
     // ============================================
     function setupPriceFilter() {
-      const slider = document.getElementById('priceSlider');
       const presets = document.getElementById('pricePresets');
-      const input = document.getElementById('priceInput');
-
-      slider.addEventListener('input', () => {
-        const v = parseInt(slider.value, 10);
-        maxPrice = v >= SLIDER_MAX ? null : v;
-        syncPriceUI();      // skriver om input-fältet + presets
-        render();
-      });
-
-      // Eget belopp: användaren skriver exakt maxpris. Tomt fält = alla priser.
-      // Vi rör INTE input.value här (det skulle störa skrivandet) – bara slider,
-      // presets och listan uppdateras. Belopp över sliderns max tillåts.
-      input.addEventListener('input', () => {
-        const raw = input.value.trim();
-        const v = parseInt(raw, 10);
-        maxPrice = (raw === '' || isNaN(v) || v <= 0) ? null : v;
-        slider.value = maxPrice == null ? SLIDER_MAX : Math.max(slider.min, Math.min(maxPrice, SLIDER_MAX));
-        syncActivePresets();
-        render();
-      });
 
       presets.querySelectorAll('.price-preset').forEach(btn => {
         btn.addEventListener('click', () => {
           const raw = btn.dataset.max;
           maxPrice = raw ? parseInt(raw, 10) : null;
-          slider.value = maxPrice == null ? SLIDER_MAX : Math.min(maxPrice, SLIDER_MAX);
-          syncPriceUI();
+          syncActivePresets();
           render();
         });
       });
-      syncPriceUI();
+      syncActivePresets();
     }
 
     // Markera den preset-knapp som matchar nuvarande maxPrice (om någon).
@@ -1877,15 +1803,6 @@
         const presetVal = raw ? parseInt(raw, 10) : null;
         btn.classList.toggle('active', presetVal === maxPrice);
       });
-    }
-
-    // Full synk: skriver om belopps-fältet OCH presets. Används när ändringen
-    // INTE kommer från själva input-fältet (slider/preset), så att vi kan visa
-    // det aktuella beloppet utan att störa pågående inmatning.
-    function syncPriceUI() {
-      const input = document.getElementById('priceInput');
-      input.value = maxPrice == null ? '' : maxPrice;
-      syncActivePresets();
     }
 
     // Applicera prisgränsen på en produktlista.
