@@ -164,6 +164,12 @@
       max-width: var(--max-width);
       margin: 0 auto;
     }
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
     .logo {
       font-size: 1.5rem;
       font-weight: 800;
@@ -185,6 +191,7 @@
       border: 1.5px solid rgba(244, 211, 94, 0.2);
       white-space: nowrap;
       transition: all 0.2s ease;
+      flex-shrink: 0;
     }
     .shame-link:hover { border-color: var(--yellow); color: var(--yellow); }
     .shame-link-full { display: none; }
@@ -1317,11 +1324,13 @@
   <!-- TOP NAV -->
   <header class="top-nav">
     <div class="top-nav-inner">
-      <div class="logo">apkguiden<span class="logo-tld">.se</span></div>
-      <a href="/samst-apk.html" class="shame-link">
-        <span class="shame-link-full">Sämst APK</span><span class="shame-link-short">Sämst</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-      </a>
+      <div class="nav-left">
+        <div class="logo">apkguiden<span class="logo-tld">.se</span></div>
+        <a href="/samst-apk.html" class="shame-link">
+          <span class="shame-link-full">Sämst APK</span><span class="shame-link-short">Sämst</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+        </a>
+      </div>
       <div class="live-indicator" id="liveIndicator">
         <span class="live-dot shimmer"></span>
         <span id="liveText">Laddar data…</span>
