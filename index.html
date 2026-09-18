@@ -200,10 +200,10 @@
     .hero-inner {
       max-width: var(--max-width);
       margin: 0 auto;
-      padding: 4rem 1.5rem;
+      padding: 4rem 1.5rem 2.5rem;
     }
     @media (min-width: 768px) {
-      .hero-inner { padding: 6rem 1.5rem; }
+      .hero-inner { padding: 6rem 1.5rem 3.5rem; }
     }
     .hero-eyebrow {
       font-size: 0.75rem;
@@ -656,6 +656,32 @@
       flex-direction: column;
       gap: 0.5rem;
     }
+    .load-more-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 1.5rem;
+    }
+    .load-more-btn {
+      padding: 0.75rem 2rem;
+      border-radius: 999px;
+      border: 1.5px solid rgba(244, 211, 94, 0.3);
+      background: transparent;
+      color: var(--yellow);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+    .load-more-btn:hover {
+      background: var(--yellow);
+      color: var(--green);
+      border-color: var(--yellow);
+    }
+    .load-more-btn:active {
+      transform: scale(0.97);
+    }
     .product-row {
       display: grid;
       /* Mobil: kompakt layout. Rank & bild smala, pris+APK staplade i en kolumn till höger. */
@@ -1009,7 +1035,7 @@
     .mini-cards-section {
       max-width: var(--max-width);
       margin: 0 auto;
-      padding: 0 1.5rem;
+      padding: 1.75rem 1.5rem 0;
     }
     .mini-cards-eyebrow {
       font-size: 0.625rem;
@@ -1364,6 +1390,9 @@
 
     <div class="podium" id="podium" style="display: none;"></div>
     <div class="product-list" id="productList" style="display: none;"></div>
+    <div class="load-more-wrap" id="loadMoreWrap" style="display: none;">
+      <button class="load-more-btn" id="loadMoreBtn" type="button">Visa fler</button>
+    </div>
     <div class="empty" id="empty" style="display: none;">Inga produkter i den här kategorin.</div>
 
     <div class="info-box">
@@ -1488,6 +1517,12 @@
     let selectedCategory = 'Alla';
     let selectedSubcategory = null; // null = visa alla i huvudkategorin
     let dataMeta = { updated: null, count: 0 };
+
+    // "Visa fler"-paginering för topplistan. Nollställs till TOP_LIST_PAGE_SIZE
+    // så fort kategori/underkategori/prisfilter ändras (se renderTopList).
+    const TOP_LIST_PAGE_SIZE = 20;
+    let topListVisibleCount = TOP_LIST_PAGE_SIZE;
+    let topListFilterKey = null;
 
     // Prisfilter: maxPrice = null betyder ingen gräns. Slidern går till
     // SLIDER_MAX; högsta läget tolkas som "Alla priser" (ingen gräns).
@@ -1877,7 +1912,16 @@
         filtered = filtered.filter(p => matchesSubcategory(p, selectedSubcategory));
       }
       filtered = applyPriceFilter(filtered);
-      const top = filtered.slice(0, 20);
+
+      // Nollställ "visa fler"-räknaren när filtret (kategori/underkategori/
+      // prisgräns) ändras, så en ny vy alltid börjar om på topp 20.
+      const filterKey = `${selectedCategory}|${selectedSubcategory}|${maxPrice}`;
+      if (filterKey !== topListFilterKey) {
+        topListFilterKey = filterKey;
+        topListVisibleCount = TOP_LIST_PAGE_SIZE;
+      }
+
+      const top = filtered.slice(0, topListVisibleCount);
 
       // Statistik – TOTAL antal i hela datasetet, och GLOBAL bästa APK (oavsett filter)
       // Användaren ville att headern alltid visar overall bäst APK.
@@ -1898,11 +1942,13 @@
       const emptyEl = document.getElementById('empty');
       const podiumEl = document.getElementById('podium');
       const listEl = document.getElementById('productList');
+      const loadMoreWrap = document.getElementById('loadMoreWrap');
 
       if (top.length === 0) {
         emptyEl.style.display = 'block';
         podiumEl.style.display = 'none';
         listEl.style.display = 'none';
+        loadMoreWrap.style.display = 'none';
         return;
       }
       emptyEl.style.display = 'none';
@@ -1928,6 +1974,21 @@
         podiumEl.style.display = 'none';
       } else {
         listEl.style.display = 'none';
+      }
+
+      // "Visa fler" – bara synlig om det finns fler produkter i det aktuella
+      // filtret än vad som redan visas.
+      const remaining = filtered.length - top.length;
+      const loadMoreBtn = document.getElementById('loadMoreBtn');
+      if (remaining > 0) {
+        loadMoreWrap.style.display = 'flex';
+        loadMoreBtn.textContent = 'Visa fler';
+        loadMoreBtn.onclick = () => {
+          topListVisibleCount += TOP_LIST_PAGE_SIZE;
+          renderTopList();
+        };
+      } else {
+        loadMoreWrap.style.display = 'none';
       }
     }
 
