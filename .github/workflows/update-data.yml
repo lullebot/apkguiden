@@ -31,10 +31,15 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data.json search-data.json
+          # index.html (statisk SEO-text + JSON-LD) och sitemap.xml (lastmod)
+          # skrivs om av update-data.py och måste därför committas med.
+          git add data.json search-data.json index.html sitemap.xml
           if git diff --staged --quiet; then
             echo "Ingen förändring i datan – inget att committa."
           else
             git commit -m "🍷 Uppdatera produktdata $(date -u +%Y-%m-%d)"
+            # Om någon hunnit pusha till main under körningen (den tar ~6 min)
+            # lägger vi vår commit ovanpå deras istället för att misslyckas.
+            git pull --rebase origin main
             git push
           fi
