@@ -1371,7 +1371,7 @@
           type="search"
           class="search-input"
           id="searchInput"
-          placeholder="Sök bland alla 7 000+ produkter…"
+          placeholder="Sök bland alla produkter…"
           autocomplete="off"
           spellcheck="false"
           aria-label="Sök bland Systembolagets sortiment"
@@ -1641,6 +1641,12 @@
             dataMeta.count = searchData.length;
             const el = document.getElementById('statCount');
             if (el) el.textContent = formatNumber(searchData.length);
+            // Sökfältets placeholder visar exakt samma antal som "Produkter"-
+            // statistiken, så den aldrig visar ett inaktuellt hårdkodat tal.
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+              searchInput.placeholder = `Sök bland alla ${formatNumber(searchData.length)} produkter…`;
+            }
           }
         });
       } catch (err) {
