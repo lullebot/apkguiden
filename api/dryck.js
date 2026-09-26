@@ -322,6 +322,8 @@ h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin:2rem 0}
 @media(min-width:720px){.stats{grid-template-columns:repeat(4,1fr)}}
 .stat{background:var(--bg-light);border-radius:1rem;padding:1rem 1.1rem}
+.stat-sub{font-size:.75rem;opacity:.75;margin-top:.2rem}
+.glas-note{font-size:.8rem;opacity:.75;max-width:42rem;margin:-1rem 0 1.5rem;line-height:1.5}
 .stat-label{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;font-weight:600;color:var(--muted)}
 .stat-value{font-size:1.6rem;font-weight:800;color:var(--cream);margin-top:.25rem;letter-spacing:-.02em}
 .stat-value small{font-size:.8rem;font-weight:600;color:var(--muted);margin-left:.2rem}
@@ -418,8 +420,9 @@ function renderProductPage(p) {
   <div class="stat main"><div class="stat-label">APK</div><div class="stat-value num">${p.apk.toFixed(2)}<small>ml/kr</small></div></div>
   <div class="stat"><div class="stat-label">Pris</div><div class="stat-value num">${kr(p.price)}<small>kr</small></div></div>
   <div class="stat"><div class="stat-label">Volym · Alkohol</div><div class="stat-value num">${esc(volumeShort(p.volume))}<small>${nf1.format(p.alcohol)} %</small></div></div>
-  <div class="stat"><div class="stat-label">Per standardglas</div><div class="stat-value num">${kr(Math.round((p.price / glas) * 100) / 100)}<small>kr</small></div></div>
+  <div class="stat"><div class="stat-label">Pris per glas*</div><div class="stat-value num">${kr(Math.round((p.price / glas) * 100) / 100)}<small>kr</small></div><div class="stat-sub">${nf1.format(glas)} glas i förpackningen</div></div>
 </section>
+<p class="glas-note">* Ett standardglas är 12 g ren alkohol – ungefär en 33 cl starköl, ett glas vin (12 cl) eller 4 cl sprit. Samma mått som Systembolaget och vården använder, så du kan jämföra öl, vin och sprit rakt av.</p>
 <a class="cta" href="${esc(systembolagetUrl(p))}" target="_blank" rel="noopener noreferrer">Se ${esc(p.name)} hos Systembolaget ↗</a>
 <h2>Om drycken</h2>
 <div class="prose">${productDescription(p)}</div>
