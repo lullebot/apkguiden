@@ -27,6 +27,7 @@ import json
 import re
 import sys
 import time
+import unicodedata
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
@@ -50,6 +51,12 @@ SEARCH_OUTPUT_PATH = Path(__file__).resolve().parent.parent / "search-data.json"
 # respektive dagens datum, se update_index_html() och touch_sitemap_lastmod().
 INDEX_HTML_PATH = Path(__file__).resolve().parent.parent / "index.html"
 SITEMAP_PATH = Path(__file__).resolve().parent.parent / "sitemap.xml"
+
+# Sitemap med en rad per dryck (/dryck/<id>-<namn>). Sidorna själva byggs
+# av Vercel-funktionen api/dryck.js – här listar vi bara adresserna så
+# Google hittar alla.
+PRODUCT_SITEMAP_PATH = Path(__file__).resolve().parent.parent / "sitemap-drycker.xml"
+SITE_URL = "https://apkguiden.se"
 
 # Hur många av topplistans produkter som skrivs in som statisk text/JSON-LD
 # i index.html, för sökmotorer som inte (fullt ut, eller i tid) kör JS.
@@ -301,6 +308,40 @@ def format_price(price) -> str:
     return f"{value:,.2f}".replace(",", " ")
 
 
+def slugify(text) -> str:
+    """Samma regel som slugify() i api/dryck.js och index.html."""
+    s = unicodedata.normalize("NFKD", str(text or "").lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    return s[:60].rstrip("-")
+
+
+def product_path(p: dict) -> str:
+    slug = slugify(p.get("name"))
+    return f"/dryck/{p['id']}" + (f"-{slug}" if slug else "")
+
+
+def product_link_html(p: dict) -> str:
+    name = html.escape(p.get("name") or "")
+    if not p.get("id"):
+        return name
+    return f'<a href="{html.escape(product_path(p))}">{name}</a>'
+
+
+def write_product_sitemap(products: list[dict]) -> None:
+    """Skriv sitemap-drycker.xml med alla drycker. Ingen <lastmod> per rad –
+    då ändras filen bara när sortimentet faktiskt ändras (nya/utgångna
+    produkter), inte varje vecka."""
+    urls = sorted({product_path(p) for p in products if p.get("id")})
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for u in urls:
+        lines.append(f"  <url><loc>{html.escape(SITE_URL + u)}</loc></url>")
+    lines.append("</urlset>")
+    PRODUCT_SITEMAP_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"Skrev {len(urls):,} dryckesadresser till {PRODUCT_SITEMAP_PATH.name}.", flush=True)
+
+
 def render_static_seo_html(top_overall: list[dict], category_leaders: list[tuple]) -> str:
     """Bygg den statiska, textbaserade SEO-fallbacken som sökmotorer och
     JS-lösa besökare ser (se SEO_STATIC_CONTENT_START/END i index.html).
@@ -320,7 +361,7 @@ def render_static_seo_html(top_overall: list[dict], category_leaders: list[tuple
         parts.append("<ul>")
         for cat, p in category_leaders:
             parts.append(
-                f"<li>{html.escape(cat)}: {html.escape(p.get('name') or '')} – "
+                f"<li>{html.escape(cat)}: {product_link_html(p)} – "
                 f"{p['apk']:.2f} ml/kr, {format_price(p.get('price'))} kr</li>"
             )
         parts.append("</ul>")
@@ -331,7 +372,7 @@ def render_static_seo_html(top_overall: list[dict], category_leaders: list[tuple
         for p in top_overall:
             producer = f" ({html.escape(p['producer'])})" if p.get("producer") else ""
             parts.append(
-                f"<li>{html.escape(p.get('name') or '')}{producer} – "
+                f"<li>{product_link_html(p)}{producer} – "
                 f"{html.escape(p.get('category') or '')}, {format_price(p.get('price'))} kr, "
                 f"{p['apk']:.2f} ml ren alkohol per krona</li>"
             )
@@ -346,6 +387,8 @@ def render_itemlist_jsonld(top_overall: list[dict]) -> str:
     items = []
     for idx, p in enumerate(top_overall, start=1):
         product: dict = {"@type": "Product", "name": p.get("name") or ""}
+        if p.get("id"):
+            product["url"] = SITE_URL + product_path(p)
         if p.get("producer"):
             product["brand"] = {"@type": "Brand", "name": p["producer"]}
         if p.get("price"):
@@ -580,6 +623,7 @@ def main() -> int:
     ]
     update_index_html(final[:SEO_STATIC_TOP_N], category_leaders)
     touch_sitemap_lastmod()
+    write_product_sitemap(search_full)
 
     return 0
 

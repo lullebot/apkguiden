@@ -316,6 +316,17 @@
     from { opacity: 0; transform: translateY(12px) rotate(-2.5deg); }
     to { opacity: 1; transform: translateY(0) rotate(-2.5deg); }
   }
+
+    /* ============================================
+       LÄNK TILL DRYCKENS EGEN SIDA (/dryck/...)
+       Namnet är en länk som "sträcks ut" över hela raden/kortet, så hela
+       raden är klickbar. Systembolaget-knappen ligger ovanpå (z-index).
+       ============================================ */
+    .product-row, .podium-card { position: relative; }
+    .drink-link { color: inherit; text-decoration: none; }
+    .drink-link::after { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+    .drink-link:hover, .drink-link:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
+    .product-link { z-index: 2; }
 </style>
 </head>
 <body>
@@ -498,7 +509,7 @@
         <div class="product-rank num-tabular">${String(rank).padStart(2, '0')}</div>
         <div class="product-image-wrap">${renderProductImage(p)}</div>
         <div class="product-info">
-          <div class="product-name">${escapeHtml(p.name)}</div>
+          <div class="product-name">${renderDrinkName(p)}</div>
           <div class="product-meta">${escapeHtml(p.producer || '')} ${p.subcategory ? '· ' + escapeHtml(p.subcategory) : ''}</div>
           <div class="product-pills">
             <span class="pill">${p.alcohol}%</span>
@@ -545,6 +556,21 @@
     if (n > 0 && n < 0.01) return n.toFixed(4);
     return n.toFixed(2);
   }
+    // Adress till dryckens egen sida. Samma regel finns i api/dryck.js och
+    // scripts/update-data.py (skiljer de sig åt blir det bara en 301-redirect).
+    function slugify(s) {
+      return String(s || '').toLowerCase().normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/g, '');
+    }
+    function productPath(p) {
+      const s = slugify(p.name);
+      return `/dryck/${p.id}${s ? '-' + s : ''}`;
+    }
+    function renderDrinkName(p) {
+      if (!p.id) return escapeHtml(p.name);
+      return `<a class="drink-link" href="${productPath(p)}">${escapeHtml(p.name)}</a>`;
+    }
   function escapeHtml(s) {
     if (s == null) return '';
     return String(s)
