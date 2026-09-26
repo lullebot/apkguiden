@@ -1,0 +1,3 @@
+# Pythons kompilerade cache – skapas automatiskt när scripts/update-data.py körs
+__pycache__/
+*.pyc
