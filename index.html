@@ -1653,6 +1653,34 @@
     let allProducts = [];
     let selectedCategory = 'Alla';
     let selectedSubcategory = null; // null = visa alla i huvudkategorin
+
+    // ---- Kategori i adressen: /?kategori=ol&typ=ljus-lager ----
+    // Dryckessidornas rank-taggar länkar hit, och adressen följer med när man
+    // byter flik, så en lista går att dela/länka direkt.
+    function urlSlug(s) {
+      return String(s || '').toLowerCase().normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+    function readCategoryFromUrl() {
+      try {
+        const q = new URLSearchParams(location.search);
+        const cat = CATEGORIES.find(c => c.key !== 'Alla' && urlSlug(c.key) === urlSlug(q.get('kategori')));
+        if (!cat) return false;
+        selectedCategory = cat.key;
+        const sub = (SUBCATEGORIES[cat.key] || []).find(x => urlSlug(x) === urlSlug(q.get('typ')));
+        selectedSubcategory = sub || null;
+        return true;
+      } catch (e) { return false; }
+    }
+    function writeCategoryToUrl() {
+      try {
+        const q = new URLSearchParams();
+        if (selectedCategory !== 'Alla') q.set('kategori', urlSlug(selectedCategory));
+        if (selectedSubcategory) q.set('typ', urlSlug(selectedSubcategory));
+        const qs = q.toString();
+        history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+      } catch (e) {}
+    }
     let dataMeta = { updated: null, count: 0 };
 
     // "Visa fler"-paginering för topplistan. Nollställs till TOP_LIST_PAGE_SIZE
@@ -1689,6 +1717,7 @@
       const staticSeo = document.getElementById('staticSeoContent');
       if (staticSeo) staticSeo.style.display = 'none';
 
+      const cameFromLink = readCategoryFromUrl();
       renderTabs();
       setupSearch();
       setupPriceFilter();
@@ -1702,6 +1731,11 @@
         updateLiveIndicator();
         updateLastUpdated();
         render();
+        if (cameFromLink) {
+          // Hoppa direkt till listan när man kommer från en dryckessida
+          const tabsWrap = document.querySelector('.tabs-wrap');
+          if (tabsWrap) window.scrollTo({ top: tabsWrap.offsetTop - 1 });
+        }
 
         // Förladda hela sortimentet i bakgrunden för söket. När det är klart
         // uppdaterar vi även "Produkter"-statistiken till hela sortimentets
@@ -1958,6 +1992,7 @@
         btn.addEventListener('click', () => {
           selectedCategory = btn.dataset.cat;
           selectedSubcategory = null; // Nollställ chip när man byter huvudkategori
+          writeCategoryToUrl();
           renderTabs();
           render();
           window.scrollTo({ top: document.querySelector('.tabs-wrap').offsetTop - 1, behavior: 'smooth' });
@@ -1987,6 +2022,7 @@
       subEl.querySelectorAll('.chip').forEach(btn => {
         btn.addEventListener('click', () => {
           selectedSubcategory = btn.dataset.sub || null;
+          writeCategoryToUrl();
           renderSubtabs();
           render();
         });
