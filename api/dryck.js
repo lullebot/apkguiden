@@ -187,6 +187,25 @@ function tasteSentence(c) {
 
 const AS_SERVING = { 'Sällskapsdryck': 'som sällskapsdryck', 'Aperitif': 'som aperitif', 'Avec/digestif': 'som avec', 'Drinkingrediens': 'som drinkingrediens' };
 
+// Systembolagets stilnamn för öl/sprit som inte går att skriva efter "är" rakt av.
+const STYLE_TEXT = {
+  'Internationell stil': 'ljus lager',
+  'Modern stil/India Pale Lager': 'India pale lager',
+  'Pilsner - tysk stil': 'pilsner i tysk stil',
+  'Pilsner - tjeckisk stil': 'pilsner i tjeckisk stil',
+  'Kölsch-stil': 'kölsch',
+  'Mild': 'mild ale',
+  'Blandning av olika öltyper': 'en blandning av olika öltyper',
+  'India pale ale (IPA)': 'India pale ale (IPA)',
+  'New England IPA/Hazy IPA': 'New England IPA',
+};
+function styleText(s) {
+  if (STYLE_TEXT[s]) return STYLE_TEXT[s];
+  // "Annan likör" → "likör"; förkortningar som IPA och XO behåller versalerna.
+  return String(s || '').replace(/^(övrig|annan)\s+/i, '')
+    .replace(/\p{L}+/gu, (w) => (/^\p{Lu}{2,}$/u.test(w) ? w : w.toLowerCase()));
+}
+
 function productDescription(p) {
   const d = DETAILS[String(p.id)] || {};
   const sub = p.subcategory || p.category;
@@ -206,7 +225,7 @@ function productDescription(p) {
     else if (isGroup(sub)) lead = style ? `är ${style}` : `hör till kategorin ${s}`;
     else lead = `är ${s}${style ? ' i stilen ' + style : ''}`;
   }
-  else if (d.s && !isGroup(d.s)) lead = `är ${lower(d.s)}`;
+  else if (d.s && !isGroup(d.s)) lead = `är ${styleText(d.s)}`;
   else if (!d.s && !isGroup(sub)) lead = `är ${lower(sub)}`;
   else lead = `hör till kategorin ${lower(d.s || sub)}`;
   let first = `<strong>${esc(p.name)}</strong> ${esc(lead)}${origin ? ' från ' + esc(origin) : ''}`;
