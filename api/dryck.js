@@ -44,6 +44,11 @@ for (const [key, list] of BY_SUB) {
   SUB_MEDIAN.set(key, list[Math.floor(list.length / 2)].apk);
 }
 
+// Placering bland ALLA drycker (för APK-betyget 1–100)
+const ALL_SORTED = [...PRODUCTS].sort((a, b) => b.apk - a.apk || (a.price || 0) - (b.price || 0));
+const OVERALL_RANK = new Map();
+ALL_SORTED.forEach((p, i) => OVERALL_RANK.set(String(p.id), i + 1));
+
 // ---------- Hjälpfunktioner ----------
 // OBS: samma regel finns i index.html, samst-apk.html och update-data.py.
 // Om de skulle skilja sig åt gör det inget – en "fel" slug 301-omdirigeras
@@ -98,6 +103,44 @@ function lower(s) {
 }
 
 const BOTTLE_SVG = `<svg class="img-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2h8"></path><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"></path></svg>`;
+
+// ---------- APK-betyg 1–100 ----------
+// 100 = bäst APK av hela sortimentet, 1 = sämst. Bygger på placering, inte
+// på själva APK-värdet, så betyget betyder "bättre än X % av allt".
+function apkScore(p) {
+  const n = ALL_SORTED.length;
+  const r = OVERALL_RANK.get(String(p.id)) || n;
+  return Math.max(1, Math.min(100, Math.round(100 * (1 - (r - 1) / n))));
+}
+// Röd (0) → gul (50) → grön (100), mjuk övergång.
+function scoreColor(score) {
+  const hue = score <= 50 ? (score / 50) * 48 : 48 + ((score - 50) / 50) * 87;
+  return `hsl(${Math.round(hue)} 80% 58%)`;
+}
+function smiley(score, color) {
+  const mouthY = 42 + ((score - 50) / 50) * 12; // 54 = stort leende, 30 = sur
+  return `<svg class="score-face" viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="30" fill="${color}"></circle>
+    <circle cx="22" cy="25" r="4" fill="#0A2D22"></circle>
+    <circle cx="42" cy="25" r="4" fill="#0A2D22"></circle>
+    <path d="M18 42 Q32 ${mouthY.toFixed(1)} 46 42" fill="none" stroke="#0A2D22" stroke-width="4.5" stroke-linecap="round"></path>
+  </svg>`;
+}
+function renderScore(p) {
+  const score = apkScore(p);
+  const color = scoreColor(score);
+  const n = ALL_SORTED.length;
+  const r = OVERALL_RANK.get(String(p.id)) || n;
+  const better = Math.floor((100 * (n - r)) / n);
+  return `<div class="score" style="--score-color: ${color}">
+    ${smiley(score, color)}
+    <div>
+      <div class="score-label">APK-betyg</div>
+      <div class="score-value"><strong>${score}</strong><span>/100</span></div>
+      <div class="score-sub">Högre APK än ${better} % av alla ${nf.format(n)} drycker i fasta sortimentet</div>
+    </div>
+  </div>`;
+}
 
 // ---------- Sidans delar ----------
 function similarProducts(p) {
@@ -317,6 +360,13 @@ a{color:var(--brand)}
 h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing:-.03em;color:var(--accent);margin:0}
 .producer{margin:.75rem 0 0;font-size:1.05rem}
 .pills{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1rem}
+.score{display:flex;align-items:center;gap:1rem;margin-top:1.25rem;padding:.9rem 1.2rem .9rem .9rem;border-radius:1.1rem;background:var(--bg-light);border:2px solid var(--score-color);max-width:26rem}
+.score-face{width:4rem;height:4rem;flex-shrink:0}
+.score-label{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;font-weight:600;color:var(--muted)}
+.score-value{line-height:1;margin-top:.15rem}
+.score-value strong{font-size:2.4rem;font-weight:900;letter-spacing:-.03em;color:var(--score-color)}
+.score-value span{font-size:1rem;font-weight:700;margin-left:.15rem;opacity:.8}
+.score-sub{font-size:.8rem;opacity:.8;margin-top:.3rem;line-height:1.35}
 .pill{font-size:.75rem;font-weight:600;padding:.3rem .7rem;border-radius:9999px;background:var(--bg-light);color:var(--cream)}
 .rankpill{background:var(--brand);color:var(--bg-dark)}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin:2rem 0}
@@ -368,7 +418,7 @@ function renderProductPage(p) {
   const sub = p.subcategory || p.category;
 
   const title = `${p.name}${p.producer && !String(p.name).includes(p.producer) ? ' – ' + p.producer : ''}: APK ${p.apk.toFixed(2)}, ${kr(p.price)} kr | apkguiden.se`;
-  const metaDescription = `${p.name} (${volumeShort(p.volume)}, ${nf1.format(p.alcohol)} %) kostar ${kr(p.price)} kr på Systembolaget och ger ${p.apk.toFixed(2)} ml alkohol per krona – plats ${subRank} av ${subTotal} bland ${lower(sub)}. Jämför APK och pris per standardglas.`;
+  const metaDescription = `APK-betyg ${apkScore(p)}/100. ${p.name} (${volumeShort(p.volume)}, ${nf1.format(p.alcohol)} %) kostar ${kr(p.price)} kr på Systembolaget och ger ${p.apk.toFixed(2)} ml alkohol per krona – plats ${subRank} av ${subTotal} bland ${lower(sub)}. Jämför APK och pris per standardglas.`;
 
   const img = p.image
     ? `<img src="${esc(p.image)}_400.png" srcset="${esc(p.image)}_400.png 1x, ${esc(p.image)}_800.png 2x" alt="${esc(p.name)}" onerror="this.style.display='none'">`
@@ -414,6 +464,7 @@ function renderProductPage(p) {
       ${p.packaging ? `<span class="pill">${esc(p.packaging)}</span>` : ''}
       ${p.new ? '<span class="pill rankpill">Nyinkommen</span>' : ''}
     </div>
+    ${renderScore(p)}
   </div>
 </section>
 <section class="stats">
