@@ -185,7 +185,7 @@ function tasteSentence(c) {
   return cap(head) + (feats.length ? ', med ' + joinSv(feats) : '') + '.';
 }
 
-const AS_SERVING = { 'Sällskapsdryck': 'som sällskapsdryck', 'Aperitif': 'som aperitif', 'Avec/digestif': 'som avec' };
+const AS_SERVING = { 'Sällskapsdryck': 'som sällskapsdryck', 'Aperitif': 'som aperitif', 'Avec/digestif': 'som avec', 'Drinkingrediens': 'som drinkingrediens' };
 
 function productDescription(p) {
   const d = DETAILS[String(p.id)] || {};
@@ -196,7 +196,16 @@ function productDescription(p) {
   // "är" – då skriver vi "hör till kategorin" istället.
   const isGroup = (x) => /&| och /.test(x) || /^(Aperitifer|Drycker av flera typer|Sprit av flera typer|Bitter)$/.test(x);
   let lead;
-  if (p.category === 'Vin') lead = `är ${lower(sub)}${d.s ? ' i stilen ' + lower(d.s) : ''}`;
+  if (p.category === 'Vin') {
+    const s = lower(sub);
+    let style = lower(d.s);
+    if (/^övrig/.test(style)) style = ''; // "Övrigt starkvin" säger inget
+    // "Vermouth vit torr" under Vermouth → "vit, torr vermouth"
+    if (style.startsWith(s + ' ')) lead = `är ${style.slice(s.length + 1).replace(/ /g, ', ')} ${s}`;
+    // "Smaksatt vin & fruktvin" + stilen "Mjöd" → "är mjöd"
+    else if (isGroup(sub)) lead = style ? `är ${style}` : `hör till kategorin ${s}`;
+    else lead = `är ${s}${style ? ' i stilen ' + style : ''}`;
+  }
   else if (d.s && !isGroup(d.s)) lead = `är ${lower(d.s)}`;
   else if (!d.s && !isGroup(sub)) lead = `är ${lower(sub)}`;
   else lead = `hör till kategorin ${lower(d.s || sub)}`;
