@@ -340,15 +340,19 @@ h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing
 .pills a.pill{text-decoration:none;transition:filter .15s ease,box-shadow .15s ease}
 .pills a.pill:hover{box-shadow:0 0 0 1.5px var(--accent)}
 .rankpill{background:var(--brand);color:var(--bg-dark)}
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin:2rem 0}
-@media(min-width:720px){.stats{grid-template-columns:repeat(4,1fr)}}
+/* En extra rad i ett kort sträcker alla kort i raden, så antal glas står på
+   samma rad som glaspriset. Fyra kolumner först när raden rymmer det, och lite
+   tätare kort på smala mobiler. minmax(0,1fr): ett långt pris får inte göra
+   sin kolumn bredare och klämma grannkortet så att dess text bryts. */
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin:2rem 0}
+@media(min-width:960px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .stat{background:var(--bg-light);border-radius:1rem;padding:1rem 1.1rem}
-.stat-sub{font-size:.75rem;opacity:.75;margin-top:.2rem}
 .stat-link{color:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
 .stat-link:hover{color:var(--cream)}
 .stat-label{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;font-weight:600;color:var(--muted)}
 .stat-value{font-size:1.6rem;font-weight:800;color:var(--cream);margin-top:.25rem;letter-spacing:-.02em}
-.stat-value small{font-size:.8rem;font-weight:600;color:var(--muted);margin-left:.2rem}
+.stat-value small{font-size:.8rem;font-weight:600;color:var(--muted);margin-left:.2rem;white-space:nowrap}
+@media(max-width:419px){.stats{gap:.5rem}.stat{padding:.875rem .75rem}.stat-value{font-size:clamp(1.25rem,6vw,1.6rem)}}
 .stat.main{background:var(--accent)}
 .stat.main .stat-label,.stat.main .stat-value,.stat.main small{color:var(--bg-dark)}
 .stat-label,.card-meta,.crumbs,.crumbs a,.eyebrow{opacity:.9}
@@ -443,7 +447,7 @@ function renderProductPage(p) {
   <div class="stat main"><div class="stat-label">APK</div><div class="stat-value num">${p.apk.toFixed(2)}<small>ml/kr</small></div></div>
   <div class="stat"><div class="stat-label">Pris</div><div class="stat-value num">${kr(p.price)}<small>kr</small></div></div>
   <div class="stat"><div class="stat-label">Volym · Alkohol</div><div class="stat-value num">${esc(volumeShort(p.volume))}<small>${nf1.format(p.alcohol)} %</small></div></div>
-  <div class="stat"><div class="stat-label"><a class="stat-link" href="/standardglas.html">Pris per glas <span aria-hidden="true">ⓘ</span></a></div><div class="stat-value num">${kr(Math.round((p.price / glas) * 100) / 100)}<small>kr</small></div><div class="stat-sub">${nf1.format(glas)} glas i förpackningen</div></div>
+  <div class="stat"><div class="stat-label"><a class="stat-link" href="/standardglas.html">Pris per glas <span aria-hidden="true">ⓘ</span></a></div><div class="stat-value num">${kr(Math.round((p.price / glas) * 100) / 100)}<small>kr</small><wbr><small title="${nf1.format(glas)} glas i förpackningen">· ${nf1.format(glas)} glas</small></div></div>
 </section>
 <a class="cta" href="${esc(systembolagetUrl(p))}" target="_blank" rel="noopener noreferrer">Se ${esc(p.name)} hos Systembolaget ↗</a>
 <h2>Om drycken</h2>
