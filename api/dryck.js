@@ -12,6 +12,15 @@
 
 const DATA = require('../search-data.json');
 
+// Produktfakta för beskrivningen (skrivs av scripts/update-data.py).
+// Saknas filen (innan första körningen) visas en kortare beskrivning.
+let DETAILS = {};
+try {
+  DETAILS = require('../product-details.json');
+} catch (e) {
+  DETAILS = {};
+}
+
 const SITE = 'https://apkguiden.se';
 const SIMILAR_EACH_SIDE = 3;
 
@@ -129,21 +138,108 @@ function renderCard(x) {
     </a>`;
 }
 
-function description(p, subRank, subTotal, median) {
+// ---------- Beskrivning (egen text, byggd av Systembolagets produktfakta) ----------
+function joinSv(list) {
+  const xs = list.filter(Boolean);
+  if (xs.length <= 1) return xs.join('');
+  return xs.slice(0, -1).join(', ') + ' och ' + xs[xs.length - 1];
+}
+function cap(s) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+function tasteSentence(c) {
+  if (!c) return '';
+  let head = '';
+  if (c.b != null) head = c.b <= 4 ? 'lätt' : c.b <= 8 ? 'medelfyllig' : 'fyllig';
+  const feats = [];
+  if (c.s != null) {
+    if (c.s <= 2) head = head ? head + ' och torr' : 'torr';
+    else feats.push(c.s <= 6 ? 'viss sötma' : 'tydlig sötma');
+  }
+  if (c.f != null && c.f >= 4) feats.push(c.f >= 7 ? 'frisk syra' : 'balanserad syra');
+  if (c.t != null && c.t >= 3) feats.push(c.t >= 7 ? 'tydlig beska' : 'lätt beska');
+  if (c.r != null && c.r >= 3) feats.push(c.r >= 7 ? 'tydlig strävhet' : 'viss strävhet');
+  if (c.k != null && c.k >= 1) feats.push(c.k >= 6 ? 'tydlig rökighet' : 'lätt rökighet');
+  if (!head && !feats.length) return '';
+  if (!head) return cap('med ' + joinSv(feats)) + '.';
+  return cap(head) + (feats.length ? ', med ' + joinSv(feats) : '') + '.';
+}
+
+const AS_SERVING = { 'Sällskapsdryck': 'som sällskapsdryck', 'Aperitif': 'som aperitif', 'Avec/digestif': 'som avec' };
+
+function productDescription(p) {
+  const d = DETAILS[String(p.id)] || {};
   const sub = p.subcategory || p.category;
-  const glas = standardDrinks(p);
+  const country = p.country === 'Internationellt märke' ? '' : p.country;
+  const origin = d.o && country ? `${d.o}, ${country}` : (country || d.o || '');
+  // Grupp-namn i plural ("Gin & Genever", "Aperitifer") kan inte stå efter
+  // "är" – då skriver vi "hör till kategorin" istället.
+  const isGroup = (x) => /&| och /.test(x) || /^(Aperitifer|Drycker av flera typer|Sprit av flera typer|Bitter)$/.test(x);
+  let lead;
+  if (p.category === 'Vin') lead = `är ${lower(sub)}${d.s ? ' i stilen ' + lower(d.s) : ''}`;
+  else if (d.s && !isGroup(d.s)) lead = `är ${lower(d.s)}`;
+  else if (!d.s && !isGroup(sub)) lead = `är ${lower(sub)}`;
+  else lead = `hör till kategorin ${lower(d.s || sub)}`;
+  let first = `<strong>${esc(p.name)}</strong> ${esc(lead)}${origin ? ' från ' + esc(origin) : ''}`;
+  if (d.g && d.g.length) first += `, gjord på ${esc(joinSv(d.g))}`;
+  if (d.v) first += `, årgång ${esc(d.v)}`;
+  first += '.';
+
+  const parts = [first];
+  const taste = tasteSentence(d.c);
+  if (taste) parts.push(taste);
+  if (d.n && d.n.length) parts.push(`Toner av ${esc(joinSv(d.n.map(lower)))}.`);
+
+  const food = (d.p || []).filter((x) => !AS_SERVING[x]).map(lower);
+  const as = (d.p || []).filter((x) => AS_SERVING[x]).map((x) => AS_SERVING[x]);
+  const temp = d.t === 'rum' ? 'Serveras rumstempererad' : d.t ? `Serveras vid ${d.t} °C` : '';
+  let pairing = [food.length ? 'passar till ' + joinSv(food) : '', joinSv(as)].filter(Boolean).join(' eller ');
+  if (!food.length && as.length) pairing = 'fungerar ' + joinSv(as);
+  if (temp && pairing) parts.push(`${temp} och ${pairing}.`);
+  else if (temp) parts.push(`${temp}.`);
+  else if (pairing) parts.push(cap(pairing) + '.');
+  if (d.e) parts.push('Ekologiskt producerad.');
+
+  const hasFacts = Object.keys(d).length > 0;
+  return `<p>${parts.join(' ')}</p>${hasFacts ? '<p class="source">Beskrivningen bygger på Systembolagets produktdata.</p>' : ''}`;
+}
+
+// ---------- Jämförelsen: hur bra är APK:n egentligen? ----------
+function comparison(p, subRank, subTotal, median) {
+  const key = p.subcategory || p.category;
+  const sub = lower(key);
+  const list = BY_SUB.get(key) || [];
+  const out = [];
+
   const diff = median > 0 ? Math.round((p.apk / median - 1) * 100) : 0;
-  const cmp =
-    diff > 0
-      ? `Det är <strong>${diff} % mer alkohol per krona</strong> än medianen för ${esc(lower(sub))} (${median.toFixed(2)} ml/kr).`
-      : diff < 0
-      ? `Det är <strong>${Math.abs(diff)} % mindre alkohol per krona</strong> än medianen för ${esc(lower(sub))} (${median.toFixed(2)} ml/kr).`
-      : `Det ligger precis på medianen för ${esc(lower(sub))}.`;
-  const origin = p.country ? ` från ${esc(p.country)}` : '';
-  const by = p.producer ? ` av ${esc(p.producer)}` : '';
-  return `<p><strong>${esc(p.name)}</strong>${by}${origin} finns i kategorin ${esc(lower(sub))} – ${esc(volumeText(p.volume))} med ${nf1.format(p.alcohol)} % alkohol. Den kostar ${kr(p.price)} kr hos Systembolaget, vilket ger en APK på <strong>${p.apk.toFixed(2)}</strong> – alltså ${p.apk.toFixed(2).replace('.', ',')} ml ren alkohol per krona.</p>
-    <p>Bland ${esc(lower(sub))} i Systembolagets fasta sortiment hamnar den på plats <strong>${nf.format(subRank)} av ${nf.format(subTotal)}</strong>, och bland all ${esc(lower(p.category))} på plats ${nf.format(p.rank)} av ${nf.format(p.categoryTotal)}. ${cmp}</p>
-    <p>Hela förpackningen motsvarar ungefär ${nf1.format(glas)} standardglas (12 g ren alkohol per glas), vilket blir cirka ${kr(Math.round((p.price / glas) * 100) / 100)} kr per standardglas.</p>`;
+  if (diff > 0) out.push(`Den ger <strong>${nf.format(diff)} % mer alkohol per krona</strong> än medianen för ${esc(sub)} (${median.toFixed(2)} ml/kr).`);
+  else if (diff < 0) out.push(`Den ger <strong>${nf.format(Math.abs(diff))} % mindre alkohol per krona</strong> än medianen för ${esc(sub)} (${median.toFixed(2)} ml/kr).`);
+  else out.push(`Den ligger precis på medianen för ${esc(sub)} (${median.toFixed(2)} ml/kr).`);
+
+  const pct = Math.max(1, Math.ceil((subRank / subTotal) * 100));
+  let rankLine = `Plats <strong>${nf.format(subRank)} av ${nf.format(subTotal)}</strong> bland ${esc(sub)}`;
+  if (subRank === 1) rankLine += ' – bäst av alla';
+  else if (pct <= 25) rankLine += ` – bland de ${pct} % bästa`;
+  else if (pct >= 75) rankLine += ` – bland de ${101 - pct} % sämsta`;
+  out.push(rankLine + '.');
+
+  // Samma prisklass (±20 %): det relevanta valet när man står i butiken.
+  const lo = p.price * 0.8, hi = p.price * 1.2;
+  const peers = list.filter((x) => x.price >= lo && x.price <= hi);
+  const peerRank = peers.findIndex((x) => x.id === p.id) + 1;
+  if (peers.length >= 3 && peerRank > 0) {
+    out.push(`I samma prisklass (${kr(Math.round(lo))}–${kr(Math.round(hi))} kr) hamnar den på plats <strong>${nf.format(peerRank)} av ${nf.format(peers.length)}</strong> bland ${esc(sub)}.`);
+  }
+
+  const best = list[0];
+  if (best && best.id !== p.id) {
+    const gain = Math.round((best.apk / p.apk - 1) * 100);
+    out.push(`Mest alkohol per krona bland ${esc(sub)} ger <a href="${esc(productPath(best))}">${esc(best.name)}</a> (${best.apk.toFixed(2)} ml/kr) – ${nf.format(gain)} % mer än den här.`);
+  } else {
+    out.push(`Inget annat i kategorin ${esc(sub)} i Systembolagets fasta sortiment ger mer alkohol per krona.`);
+  }
+  return out.map((x) => `<li>${x}</li>`).join('');
 }
 
 function page({ title, metaDescription, canonical, jsonLd, body, noindex, ogImage }) {
@@ -236,6 +332,11 @@ h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing
 .cta:hover{background:var(--brand)}
 .prose{max-width:42rem;font-size:1.05rem}
 .prose strong{color:var(--accent)}
+.prose p{margin:0 0 .9rem}
+.source{font-size:.8rem;opacity:.65}
+.facts{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.6rem}
+.facts li{padding-left:1.1rem;position:relative}
+.facts li::before{content:'';position:absolute;left:0;top:.6em;width:.4rem;height:.4rem;border-radius:50%;background:var(--accent)}
 h2{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;color:var(--accent);margin:2.5rem 0 1rem}
 .cards{display:flex;flex-direction:column;gap:.5rem}
 .card{display:grid;grid-template-columns:3rem 1fr auto;gap:.875rem;align-items:center;background:var(--bg-light);border-radius:1rem;padding:.7rem .9rem;text-decoration:none;color:var(--cream);border:1.5px solid transparent}
@@ -320,8 +421,10 @@ function renderProductPage(p) {
   <div class="stat"><div class="stat-label">Per standardglas</div><div class="stat-value num">${kr(Math.round((p.price / glas) * 100) / 100)}<small>kr</small></div></div>
 </section>
 <a class="cta" href="${esc(systembolagetUrl(p))}" target="_blank" rel="noopener noreferrer">Se ${esc(p.name)} hos Systembolaget ↗</a>
-<h2>Om APK:n</h2>
-<div class="prose">${description(p, subRank, subTotal, median)}</div>
+<h2>Om drycken</h2>
+<div class="prose">${productDescription(p)}</div>
+<h2>Hur bra är APK:n?</h2>
+<ul class="prose facts">${comparison(p, subRank, subTotal, median)}</ul>
 ${similar.length ? `<h2>Liknande APK bland ${esc(lower(sub))}</h2><div class="cards">${similar.map(renderCard).join('')}</div>` : ''}
 ${best.length ? `<h2>Bäst APK bland ${esc(lower(sub))}</h2><div class="cards">${best.map(renderCard).join('')}</div>` : ''}
 `;
