@@ -171,12 +171,12 @@ ${canonical ? `<meta property="og:url" content="${esc(canonical)}">` : ''}
 ${jsonLd ? jsonLd.map((j) => `<script type="application/ld+json">${JSON.stringify(j).replace(/</g, '\\u003c')}</script>`).join('\n') : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>${CSS}</style>
 </head>
 <body>
 <header class="top-nav"><div class="wrap nav-inner">
-  <a href="/" class="logo"><img src="/favicon.svg" alt="apkguiden.se" width="40" height="40"></a>
+  <a href="/" class="logo" aria-label="apkguiden.se – till startsidan"><img class="logo-mark" src="/favicon.svg" alt="APK" width="48" height="48"></a>
   <a href="/" class="back-link">← Hela topplistan</a>
 </div></header>
 <main class="wrap">
@@ -194,15 +194,18 @@ const CSS = `
 :root{--bg:#0F3D2E;--bg-dark:#0A2D22;--bg-light:#1A523F;--accent:#F4D35E;--cream:#F5EBC4;--muted:#D9B842;--brand:#F4D35E;--brand-muted:#D9B842;--line:rgba(244,211,94,.14)}
 *,*::before,*::after{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{background:var(--bg);color:var(--cream);font-family:'Bricolage Grotesque',-apple-system,BlinkMacSystemFont,sans-serif;font-feature-settings:'ss01','ss02';-webkit-font-smoothing:antialiased;line-height:1.5}
+body{background:var(--bg);color:var(--cream);font-family:'Schibsted Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5}
 a{color:var(--brand)}
-.num{font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:normal}
 .wrap{max-width:60rem;margin:0 auto;padding:0 1rem}
 @media(min-width:768px){.wrap{padding:0 1.5rem}}
 .top-nav{background:var(--bg-dark);border-bottom:1px solid var(--line)}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-top:1rem;padding-bottom:1rem}
-.logo{display:inline-flex;line-height:0;text-decoration:none}
-.logo img{width:2.5rem;height:2.5rem;border-radius:22%;box-shadow:0 0 0 1.5px rgba(244,211,94,.35)}
+.logo{display:inline-flex;align-items:center;gap:.6rem;text-decoration:none;line-height:1;font-weight:900;letter-spacing:-.035em;color:var(--brand)}
+.logo-mark{width:3rem;height:3rem;flex-shrink:0;display:block;border-radius:22%;box-shadow:0 0 0 1.5px rgba(244,211,94,.3)}
+.logo-word{font-size:1.6rem}
+.logo-tld{font-weight:600}
+@media(max-width:380px){.logo-mark{width:2.6rem;height:2.6rem}}
 .logo-tld{color:var(--brand-muted)}
 .back-link{font-size:.8rem;font-weight:600;color:var(--cream);text-decoration:none;padding:.5rem .875rem;border-radius:9999px;border:1.5px solid rgba(244,211,94,.25);white-space:nowrap}
 .back-link:hover{border-color:var(--accent);color:var(--accent)}
