@@ -33,7 +33,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # index.html (statisk SEO-text + JSON-LD) och sitemap.xml (lastmod)
           # skrivs om av update-data.py och måste därför committas med.
-          git add data.json search-data.json index.html sitemap.xml
+          git add data.json search-data.json index.html sitemap.xml sitemap-drycker.xml
           if git diff --staged --quiet; then
             echo "Ingen förändring i datan – inget att committa."
           else
