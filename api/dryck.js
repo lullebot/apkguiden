@@ -333,7 +333,9 @@ a{color:var(--brand)}
    en höjd från aspect-ratio som bestämd, så bildens max-height:100% ignorerades
    och höga burkar/flaskor visades i full storlek utanför rutan. */
 .hero-img{background:var(--bg-light);border-radius:1.25rem;display:flex;align-items:center;justify-content:center;padding:1rem;width:14rem;height:14rem;max-width:100%;margin:0 auto;overflow:hidden}
-.hero-img img{max-width:100%;max-height:100%;object-fit:contain}
+/* Bilden får fast storlek (12rem = rutans 14rem minus padding) och object-fit
+   passar in motivet. Inga procent-höjder alls – de är det Safari strular med. */
+.hero-img img{display:block;width:100%;height:12rem;min-width:0;object-fit:contain}
 .img-fallback{width:40%;color:var(--muted)}
 .eyebrow{font-size:.75rem;letter-spacing:.25em;text-transform:uppercase;font-weight:600;color:var(--muted);margin:0 0 .75rem}
 h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing:-.03em;color:var(--accent);margin:0}
@@ -500,9 +502,12 @@ module.exports = (req, res) => {
     return res.end();
   }
 
-  // Webbläsare: kort cache. Vercels CDN: ett dygn, och servera gammal sida
-  // medan en ny byggs i bakgrunden. Ny deploy tömmer CDN-cachen ändå.
-  res.setHeader('Cache-Control', 'public, max-age=600, s-maxage=86400, stale-while-revalidate=604800');
+  // Webbläsare: fråga alltid efter senaste versionen (svaret kommer ändå från
+  // CDN:et, så det kostar inget), annars syns rättningar först efter att
+  // telefonens gamla kopia gått ut. Vercels CDN: ett dygn, och servera gammal
+  // sida medan en ny byggs i bakgrunden. Ny deploy tömmer CDN-cachen ändå.
+  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  res.setHeader('Vercel-CDN-Cache-Control', 'max-age=86400, stale-while-revalidate=604800');
   res.statusCode = 200;
   return res.end(renderProductPage(p));
 };
