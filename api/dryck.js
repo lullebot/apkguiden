@@ -176,7 +176,7 @@ ${jsonLd ? jsonLd.map((j) => `<script type="application/ld+json">${JSON.stringif
 </head>
 <body>
 <header class="top-nav"><div class="wrap nav-inner">
-  <a href="/" class="logo" aria-label="apkguiden.se – till startsidan"><svg class="logo-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#F4D35E"/><path d="M20 8.5c0 0-7.5 9.2-7.5 14.6a7.5 7.5 0 0 0 15 0C27.5 17.7 20 8.5 20 8.5z" fill="#0F3D2E"/></svg><span class="logo-word">apkguiden<span class="logo-tld">.se</span></span></a>
+  <a href="/" class="logo" aria-label="apkguiden.se – till startsidan"><img class="logo-mark" src="/favicon.svg" alt="APK" width="48" height="48"></a>
   <a href="/" class="back-link">← Hela topplistan</a>
 </div></header>
 <main class="wrap">
@@ -202,10 +202,10 @@ a{color:var(--brand)}
 .top-nav{background:var(--bg-dark);border-bottom:1px solid var(--line)}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-top:1rem;padding-bottom:1rem}
 .logo{display:inline-flex;align-items:center;gap:.6rem;text-decoration:none;line-height:1;font-weight:900;letter-spacing:-.035em;color:var(--brand)}
-.logo-mark{width:2.1rem;height:2.1rem;flex-shrink:0}
+.logo-mark{width:3rem;height:3rem;flex-shrink:0;display:block;border-radius:22%;box-shadow:0 0 0 1.5px rgba(244,211,94,.3)}
 .logo-word{font-size:1.6rem}
 .logo-tld{font-weight:600}
-@media(max-width:380px){.logo-word{font-size:1.35rem}.logo-mark{width:1.8rem;height:1.8rem}}
+@media(max-width:380px){.logo-mark{width:2.6rem;height:2.6rem}}
 .logo-tld{color:var(--brand-muted)}
 .back-link{font-size:.8rem;font-weight:600;color:var(--cream);text-decoration:none;padding:.5rem .875rem;border-radius:9999px;border:1.5px solid rgba(244,211,94,.25);white-space:nowrap}
 .back-link:hover{border-color:var(--accent);color:var(--accent)}
