@@ -48,7 +48,7 @@
 <!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
   /* ============================================
@@ -73,13 +73,12 @@
   body {
     background-color: var(--green);
     color: var(--yellow);
-    font-family: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-feature-settings: 'ss01', 'ss02';
+    font-family: 'Schibsted Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
   }
 
-  .num-tabular { font-variant-numeric: tabular-nums; }
+  .num-tabular { font-variant-numeric: normal; }
 
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(12px); }
@@ -198,7 +197,7 @@
   .product-row:hover { border-color: rgba(255, 107, 74, 0.4); background-color: var(--green-light); }
   .product-rank {
     font-size: 1.125rem; font-weight: 700; letter-spacing: -0.03em; color: var(--yellow-muted);
-    line-height: 1; text-align: center; font-variant-numeric: tabular-nums;
+    line-height: 1; text-align: center; font-variant-numeric: normal;
   }
   @media (min-width: 768px) { .product-rank { font-size: 1.875rem; } }
   .product-image-wrap {
@@ -328,9 +327,12 @@
     .drink-link:hover, .drink-link:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
     .product-link { z-index: 2; }
 
-    /* Logga: APK-ikonen istället för texten "apkguiden.se" */
-    .logo { display: inline-flex; line-height: 0; text-decoration: none; }
-    .logo img { width: 2.5rem; height: 2.5rem; border-radius: 22%; box-shadow: 0 0 0 1.5px rgba(244, 211, 94, 0.35); }
+    /* Logga: myntet med droppen + ordmärket i Schibsted Grotesk */
+    .logo { display: inline-flex; align-items: center; gap: 0.6rem; text-decoration: none; line-height: 1; font-weight: 900; letter-spacing: -0.035em; }
+    .logo-mark { width: 2.1rem; height: 2.1rem; flex-shrink: 0; }
+    .logo-word { font-size: 1.6rem; }
+    .logo-tld { font-weight: 600; }
+    @media (max-width: 380px) { .logo-word { font-size: 1.35rem; } .logo-mark { width: 1.8rem; height: 1.8rem; } }
 </style>
 </head>
 <body>
@@ -340,7 +342,7 @@
 <!-- TOP NAV -->
 <header class="top-nav">
   <div class="top-nav-inner">
-    <a href="/" class="logo"><img src="/favicon.svg" alt="apkguiden.se" width="40" height="40"></a>
+    <a href="/" class="logo" aria-label="apkguiden.se – till startsidan"><svg class="logo-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#F4D35E"/><path d="M20 8.5c0 0-7.5 9.2-7.5 14.6a7.5 7.5 0 0 0 15 0C27.5 17.7 20 8.5 20 8.5z" fill="#0F3D2E"/></svg><span class="logo-word">apkguiden<span class="logo-tld">.se</span></span></a>
     <a href="/" class="back-link">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
       Bäst APK
