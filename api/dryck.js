@@ -176,7 +176,7 @@ ${jsonLd ? jsonLd.map((j) => `<script type="application/ld+json">${JSON.stringif
 </head>
 <body>
 <header class="top-nav"><div class="wrap nav-inner">
-  <a href="/" class="logo">apkguiden<span class="logo-tld">.se</span></a>
+  <a href="/" class="logo"><img src="/favicon.svg" alt="apkguiden.se" width="40" height="40"></a>
   <a href="/" class="back-link">← Hela topplistan</a>
 </div></header>
 <main class="wrap">
@@ -201,7 +201,8 @@ a{color:var(--brand)}
 @media(min-width:768px){.wrap{padding:0 1.5rem}}
 .top-nav{background:var(--bg-dark);border-bottom:1px solid var(--line)}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-top:1rem;padding-bottom:1rem}
-.logo{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;color:var(--brand);text-decoration:none}
+.logo{display:inline-flex;line-height:0;text-decoration:none}
+.logo img{width:2.5rem;height:2.5rem;border-radius:22%;box-shadow:0 0 0 1.5px rgba(244,211,94,.35)}
 .logo-tld{color:var(--brand-muted)}
 .back-link{font-size:.8rem;font-weight:600;color:var(--cream);text-decoration:none;padding:.5rem .875rem;border-radius:9999px;border:1.5px solid rgba(244,211,94,.25);white-space:nowrap}
 .back-link:hover{border-color:var(--accent);color:var(--accent)}
