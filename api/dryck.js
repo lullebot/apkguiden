@@ -47,19 +47,21 @@ for (const [key, list] of BY_SUB) {
 // Skamlistan (samst-apk.html): sämst 20 totalt och sämst 20 per Vin/Öl/Sprit.
 // Samma sortering som sidan: lägst APK först, dyrast vinner vid lika.
 const SHAME_N = 20;
-const SHAME = new Map(); // id -> [{ rank, label }]
-function addShame(list, label) {
+const SHAME = new Map(); // id -> [{ rank, total, label, href }]
+function addShame(list, label, href) {
   [...list]
     .sort((a, b) => a.apk - b.apk || b.price - a.price)
     .slice(0, SHAME_N)
     .forEach((p, i) => {
       const id = String(p.id);
       if (!SHAME.has(id)) SHAME.set(id, []);
-      SHAME.get(id).push({ rank: i + 1, label });
+      SHAME.get(id).push({ rank: i + 1, total: list.length, label, href });
     });
 }
-addShame(PRODUCTS, 'totalt');
-for (const cat of ['Vin', 'Öl', 'Sprit']) addShame(PRODUCTS.filter((p) => p.category === cat), cat.toLowerCase());
+addShame(PRODUCTS, 'totalt', '/samst-apk.html');
+addShame(PRODUCTS.filter((p) => p.category === 'Vin'), 'vin', '/samst-apk.html?kategori=vin');
+addShame(PRODUCTS.filter((p) => p.category === 'Öl'), 'öl', '/samst-apk.html?kategori=ol');
+addShame(PRODUCTS.filter((p) => p.category === 'Sprit'), 'sprit', '/samst-apk.html?kategori=sprit');
 
 // ---------- Hjälpfunktioner ----------
 // OBS: samma regel finns i index.html, samst-apk.html och update-data.py.
@@ -434,7 +436,7 @@ function renderProductPage(p) {
       <span class="pill">#${nf.format(p.rank)} av ${nf.format(p.categoryTotal)} i ${esc(lower(p.category))}</span>
       ${p.packaging ? `<span class="pill">${esc(p.packaging)}</span>` : ''}
       ${p.new ? '<span class="pill rankpill">Nyinkommen</span>' : ''}
-      ${(SHAME.get(String(p.id)) || []).map((x) => `<a class="shame-tag" href="/samst-apk.html" title="Topp ${SHAME_N} på Sämst APK-listan"><span>#${x.rank} på skamlistan · ${esc(x.label)}</span></a>`).join('')}
+      ${(SHAME.get(String(p.id)) || []).map((x) => `<a class="shame-tag" href="${x.href}" title="Sämst APK – ${esc(x.label)}"><span>#${x.rank} av ${nf.format(x.total)} på skamlistan · ${esc(x.label)}</span></a>`).join('')}
     </div>
   </div>
 </section>

@@ -440,7 +440,9 @@
   ];
 
   let ALL_PRODUCTS = [];
-  let activeCategory = 'Alla';
+  // ?kategori=vin|ol|sprit öppnar rätt lista direkt (länkas från dryckessidornas skamliste-taggar)
+  const CAT_PARAM = { vin: 'Vin', ol: 'Öl', 'öl': 'Öl', sprit: 'Sprit' };
+  let activeCategory = CAT_PARAM[(new URLSearchParams(location.search).get('kategori') || '').toLowerCase()] || 'Alla';
 
   async function init() {
     renderTabs();
@@ -467,6 +469,10 @@
     tabsEl.querySelectorAll('.tab').forEach(btn => {
       btn.addEventListener('click', () => {
         activeCategory = btn.dataset.key;
+        try {
+          const slug = { 'Vin': 'vin', 'Öl': 'ol', 'Sprit': 'sprit' }[activeCategory];
+          history.replaceState(null, '', slug ? `?kategori=${slug}` : location.pathname);
+        } catch (e) {}
         renderTabs();
         renderList();
       });
