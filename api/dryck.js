@@ -357,6 +357,8 @@ h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing
 .stat-label{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;font-weight:600;color:var(--muted)}
 .stat-value{font-size:1.6rem;font-weight:800;color:var(--cream);margin-top:.25rem;letter-spacing:-.02em}
 .stat-value small{font-size:.8rem;font-weight:600;color:var(--muted);margin-left:.2rem;white-space:nowrap}
+/* Volym och alkoholhalt är lika viktiga: båda talen i full storlek, enheterna små */
+.stat-sep{margin:0 .3rem 0 .35rem;font-weight:500;color:var(--muted)}
 @media(max-width:419px){.stats{gap:.5rem}.stat{padding:.875rem .75rem}.stat-value{font-size:clamp(1.25rem,6vw,1.6rem)}}
 .stat.main{background:var(--accent)}
 .stat.main .stat-label,.stat.main .stat-value,.stat.main small{color:var(--bg-dark)}
@@ -397,6 +399,7 @@ function renderProductPage(p) {
   const median = SUB_MEDIAN.get(key) || 0;
   const canonical = SITE + productPath(p);
   const glas = standardDrinks(p);
+  const [volNum, volUnit] = volumeShort(p.volume).split(' ');
   const sub = p.subcategory || p.category;
 
   const title = `${p.name}${p.producer && !String(p.name).includes(p.producer) ? ' – ' + p.producer : ''}: APK ${p.apk.toFixed(2)}, ${kr(p.price)} kr | apkguiden.se`;
@@ -451,7 +454,7 @@ function renderProductPage(p) {
 <section class="stats">
   <div class="stat main"><div class="stat-label">APK</div><div class="stat-value num">${p.apk.toFixed(2)}<small>ml/kr</small></div></div>
   <div class="stat"><div class="stat-label">Pris</div><div class="stat-value num">${kr(p.price)}<small>kr</small></div></div>
-  <div class="stat"><div class="stat-label">Volym · Alkohol</div><div class="stat-value num">${esc(volumeShort(p.volume))}<small>${nf1.format(p.alcohol)} %</small></div></div>
+  <div class="stat"><div class="stat-label">Volym · Alkohol</div><div class="stat-value num">${esc(volNum)}<small>${esc(volUnit)}</small><wbr><span class="stat-sep">·</span>${nf1.format(p.alcohol)}<small>%</small></div></div>
   <div class="stat"><div class="stat-label"><a class="stat-link" href="/standardglas.html">Pris per glas <span aria-hidden="true">ⓘ</span></a></div><div class="stat-value num">${kr(Math.round((p.price / glas) * 100) / 100)}<small>kr</small><wbr><small title="${nf1.format(glas)} glas i förpackningen">· ${nf1.format(glas)} glas</small></div></div>
 </section>
 <a class="cta" href="${esc(systembolagetUrl(p))}" target="_blank" rel="noopener noreferrer">Se ${esc(p.name)} hos Systembolaget ↗</a>
