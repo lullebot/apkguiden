@@ -159,7 +159,7 @@ ${noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" hr
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<meta name="theme-color" content="#1A1A1A">
+<meta name="theme-color" content="#0F3D2E">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="apkguiden.se">
 <meta property="og:title" content="${esc(title)}">
@@ -191,7 +191,7 @@ ${body}
 }
 
 const CSS = `
-:root{--bg:#1A1A1A;--bg-dark:#101010;--bg-light:#262626;--accent:#FF6B4A;--cream:#EFD9C8;--muted:#C9714F;--brand:#F4D35E;--brand-muted:#D9B842;--line:rgba(255,107,74,.14)}
+:root{--bg:#0F3D2E;--bg-dark:#0A2D22;--bg-light:#1A523F;--accent:#F4D35E;--cream:#F5EBC4;--muted:#D9B842;--brand:#F4D35E;--brand-muted:#D9B842;--line:rgba(244,211,94,.14)}
 *,*::before,*::after{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{background:var(--bg);color:var(--cream);font-family:'Bricolage Grotesque',-apple-system,BlinkMacSystemFont,sans-serif;font-feature-settings:'ss01','ss02';-webkit-font-smoothing:antialiased;line-height:1.5}
@@ -203,7 +203,7 @@ a{color:var(--brand)}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-top:1rem;padding-bottom:1rem}
 .logo{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;color:var(--brand);text-decoration:none}
 .logo-tld{color:var(--brand-muted)}
-.back-link{font-size:.8rem;font-weight:600;color:var(--cream);text-decoration:none;padding:.5rem .875rem;border-radius:9999px;border:1.5px solid rgba(255,107,74,.25);white-space:nowrap}
+.back-link{font-size:.8rem;font-weight:600;color:var(--cream);text-decoration:none;padding:.5rem .875rem;border-radius:9999px;border:1.5px solid rgba(244,211,94,.25);white-space:nowrap}
 .back-link:hover{border-color:var(--accent);color:var(--accent)}
 .crumbs{font-size:.8rem;color:var(--muted);margin:1.5rem 0 1rem;display:flex;flex-wrap:wrap;gap:.35rem}
 .crumbs a{color:var(--muted);text-decoration:none}
@@ -218,7 +218,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing
 .producer{margin:.75rem 0 0;font-size:1.05rem}
 .pills{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1rem}
 .pill{font-size:.75rem;font-weight:600;padding:.3rem .7rem;border-radius:9999px;background:var(--bg-light);color:var(--cream)}
-.rankpill{background:rgba(244,211,94,.12);color:var(--brand)}
+.rankpill{background:var(--brand);color:var(--bg-dark)}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin:2rem 0}
 @media(min-width:720px){.stats{grid-template-columns:repeat(4,1fr)}}
 .stat{background:var(--bg-light);border-radius:1rem;padding:1rem 1.1rem}
@@ -227,8 +227,9 @@ h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing
 .stat-value small{font-size:.8rem;font-weight:600;color:var(--muted);margin-left:.2rem}
 .stat.main{background:var(--accent)}
 .stat.main .stat-label,.stat.main .stat-value,.stat.main small{color:var(--bg-dark)}
-.cta{display:inline-flex;align-items:center;gap:.5rem;background:var(--brand);color:var(--bg-dark);font-weight:700;text-decoration:none;padding:.8rem 1.3rem;border-radius:9999px;margin-top:.25rem}
-.cta:hover{background:var(--brand-muted)}
+.stat-label,.card-meta,.crumbs,.crumbs a,.eyebrow{opacity:.9}
+.cta{display:inline-flex;align-items:center;gap:.5rem;background:var(--cream);color:var(--bg-dark);font-weight:700;text-decoration:none;padding:.8rem 1.3rem;border-radius:9999px;margin-top:.25rem}
+.cta:hover{background:var(--brand)}
 .prose{max-width:42rem;font-size:1.05rem}
 .prose strong{color:var(--accent)}
 h2{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;color:var(--accent);margin:2.5rem 0 1rem}
@@ -267,7 +268,7 @@ function renderProductPage(p) {
     : BOTTLE_SVG;
 
   const similar = similarProducts(p);
-  const best = topOfSub(p, 5);
+  const best = topOfSub(p, 5 + similar.length).filter((x) => !similar.includes(x)).slice(0, 5);
 
   const jsonLd = [
     {

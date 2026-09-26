@@ -1325,6 +1325,49 @@
     .drink-link::after { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
     .drink-link:hover, .drink-link:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
     .product-link { z-index: 2; }
+  
+    /* ============================================
+       SÖKFÖRSLAG (autocomplete under sökfältet)
+       Klick/Enter på ett förslag → dryckens egen sida.
+       ============================================ */
+    .suggest {
+      position: absolute;
+      top: calc(100% + 0.4rem);
+      left: 0;
+      right: 0;
+      z-index: 60;
+      margin: 0;
+      padding: 0.375rem;
+      list-style: none;
+      background: #141414;
+      border: 1.5px solid rgba(244, 211, 94, 0.25);
+      border-radius: 1rem;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      max-height: min(70vh, 30rem);
+      overflow-y: auto;
+    }
+    .suggest[hidden] { display: none; }
+    .suggest-item a {
+      display: grid;
+      grid-template-columns: 2.25rem minmax(0, 1fr) auto;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.5rem 0.625rem;
+      border-radius: 0.7rem;
+      text-decoration: none;
+      color: var(--cream);
+    }
+    .suggest-item.active a, .suggest-item a:hover { background: rgba(244, 211, 94, 0.1); }
+    .suggest-img { width: 2.25rem; height: 2.25rem; display: flex; align-items: center; justify-content: center; }
+    .suggest-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .suggest-img svg { width: 60%; color: rgba(245, 235, 196, 0.4); }
+    .suggest-text { min-width: 0; display: flex; flex-direction: column; }
+    .suggest-name { font-weight: 700; color: var(--yellow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .suggest-name mark { background: none; color: var(--brand-yellow, #F4D35E); }
+    .suggest-meta { font-size: 0.75rem; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .suggest-apk { font-weight: 800; color: var(--yellow); font-variant-numeric: tabular-nums; text-align: right; line-height: 1.15; }
+    .suggest-apk small { display: block; font-size: 0.65rem; font-weight: 600; opacity: 0.7; }
+    .suggest-all { padding: 0.5rem 0.625rem 0.25rem; font-size: 0.75rem; opacity: 0.65; }
   </style>
 </head>
 <body>
@@ -1386,7 +1429,12 @@
           autocomplete="off"
           spellcheck="false"
           aria-label="Sök bland Systembolagets sortiment"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="searchSuggest"
         />
+        <ul class="suggest" id="searchSuggest" role="listbox" aria-label="Förslag" hidden></ul>
         <button class="search-clear" id="searchClear" type="button" aria-label="Rensa sökning" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
         </button>
@@ -1690,6 +1738,7 @@
             await loadSearchData();
           }
           render();
+          renderSuggestions();
         }, 150);
       });
 
@@ -1699,11 +1748,14 @@
         clearBtn.hidden = true;
         clearTimeout(searchDebounceTimer);
         render();
+        closeSuggestions();
         input.focus();
       });
 
       // Esc rensar sökningen
       input.addEventListener('keydown', (e) => {
+        // Pil upp/ner + Enter i förslagslistan
+        if (handleSuggestKey(e)) return;
         if (e.key === 'Escape' && searchQuery) {
           input.value = '';
           searchQuery = '';
@@ -1711,6 +1763,143 @@
           render();
         }
       });
+
+      // Visa förslagen igen när man klickar tillbaka i fältet,
+      // stäng dem när man klickar någon annanstans.
+      input.addEventListener('focus', () => { if (searchQuery) renderSuggestions(); });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-inner')) closeSuggestions();
+      });
+    }
+
+    // ============================================
+    // SÖKFÖRSLAG – som Googles autocomplete
+    // ============================================
+    const SUGGEST_MAX = 8;
+    let suggestItems = [];
+    let suggestActive = -1;
+
+    // Poäng: namnet börjar med sökordet > ett ord i namnet börjar med det >
+    // namnet innehåller det > träff bara i producent/land/typ. Lika poäng →
+    // bäst APK först (searchData är redan APK-sorterad).
+    function suggestScore(p, q) {
+      const name = (p.name || '').toLowerCase();
+      if (name.startsWith(q)) return 0;
+      if ((' ' + name).includes(' ' + q)) return 1;
+      if (name.includes(q)) return 2;
+      if (p._lc.includes(q)) return 3;
+      return -1;
+    }
+
+    function findSuggestions(q) {
+      const buckets = [[], [], [], []];
+      for (const p of searchData) {
+        if (!p.id) continue;
+        const sc = suggestScore(p, q);
+        if (sc >= 0 && buckets[sc].length < SUGGEST_MAX) buckets[sc].push(p);
+        if (buckets[0].length >= SUGGEST_MAX) break;
+      }
+      return buckets.flat().slice(0, SUGGEST_MAX);
+    }
+
+    function highlight(name, q) {
+      const i = name.toLowerCase().indexOf(q);
+      if (i < 0) return escapeHtml(name);
+      return escapeHtml(name.slice(0, i)) + '<mark>' + escapeHtml(name.slice(i, i + q.length)) + '</mark>' + escapeHtml(name.slice(i + q.length));
+    }
+
+    function renderSuggestions() {
+      const box = document.getElementById('searchSuggest');
+      const input = document.getElementById('searchInput');
+      const q = searchQuery.toLowerCase();
+      if (!q || !searchData || searchData.length === 0 || document.activeElement !== input) {
+        closeSuggestions();
+        return;
+      }
+      suggestItems = findSuggestions(q);
+      suggestActive = -1;
+      if (suggestItems.length === 0) { closeSuggestions(); return; }
+
+      box.innerHTML = suggestItems.map((p, i) => {
+        const vol = p.volume >= 1000 ? `${(p.volume / 1000).toFixed(p.volume % 1000 === 0 ? 0 : 2)} L` : `${p.volume} ml`;
+        const img = p.image
+          ? `<img src="${escapeHtml(p.image)}_200.png" alt="" loading="lazy" onerror="this.style.display='none'">`
+          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M8 2h8"></path><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"></path></svg>`;
+        return `<li class="suggest-item" role="option" id="suggest-${i}" aria-selected="false">
+          <a href="${productPath(p)}">
+            <span class="suggest-img">${img}</span>
+            <span class="suggest-text">
+              <span class="suggest-name">${highlight(p.name || '', q)}</span>
+              <span class="suggest-meta">${escapeHtml(p.producer || '')}${p.producer ? ' · ' : ''}${escapeHtml(p.subcategory || p.category)} · ${vol} · ${formatPrice(p.price)} kr</span>
+            </span>
+            <span class="suggest-apk">${p.apk.toFixed(2)}<small>ml/kr</small></span>
+          </a>
+        </li>`;
+      }).join('') + `<li class="suggest-all" role="presentation">Enter visar alla träffar i listan nedan</li>`;
+      box.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeSuggestions() {
+      const box = document.getElementById('searchSuggest');
+      const input = document.getElementById('searchInput');
+      if (!box) return;
+      box.hidden = true;
+      box.innerHTML = '';
+      suggestItems = [];
+      suggestActive = -1;
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+    }
+
+    function setSuggestActive(i) {
+      const box = document.getElementById('searchSuggest');
+      const input = document.getElementById('searchInput');
+      const items = box.querySelectorAll('.suggest-item');
+      items.forEach((el, j) => {
+        el.classList.toggle('active', j === i);
+        el.setAttribute('aria-selected', j === i ? 'true' : 'false');
+      });
+      suggestActive = i;
+      if (i >= 0) {
+        input.setAttribute('aria-activedescendant', `suggest-${i}`);
+        items[i].scrollIntoView({ block: 'nearest' });
+      } else {
+        input.removeAttribute('aria-activedescendant');
+      }
+    }
+
+    // Returnerar true om tangenten hanterades av förslagslistan
+    function handleSuggestKey(e) {
+      const open = !document.getElementById('searchSuggest').hidden && suggestItems.length > 0;
+      if (!open) return false;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSuggestActive(suggestActive + 1 >= suggestItems.length ? 0 : suggestActive + 1);
+        return true;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSuggestActive(suggestActive - 1 < 0 ? suggestItems.length - 1 : suggestActive - 1);
+        return true;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (suggestActive >= 0) {
+          window.location.href = productPath(suggestItems[suggestActive]);
+        } else {
+          // Inget förslag markerat → stäng listan och visa alla träffar som vanligt
+          closeSuggestions();
+          e.target.blur();
+          document.getElementById('productList').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        return true;
+      }
+      if (e.key === 'Escape') {
+        closeSuggestions();
+        return true;
+      }
+      return false;
     }
 
     async function loadSearchData() {
