@@ -44,6 +44,23 @@ for (const [key, list] of BY_SUB) {
   SUB_MEDIAN.set(key, list[Math.floor(list.length / 2)].apk);
 }
 
+// Skamlistan (samst-apk.html): sämst 20 totalt och sämst 20 per Vin/Öl/Sprit.
+// Samma sortering som sidan: lägst APK först, dyrast vinner vid lika.
+const SHAME_N = 20;
+const SHAME = new Map(); // id -> [{ rank, label }]
+function addShame(list, label) {
+  [...list]
+    .sort((a, b) => a.apk - b.apk || b.price - a.price)
+    .slice(0, SHAME_N)
+    .forEach((p, i) => {
+      const id = String(p.id);
+      if (!SHAME.has(id)) SHAME.set(id, []);
+      SHAME.get(id).push({ rank: i + 1, label });
+    });
+}
+addShame(PRODUCTS, 'totalt');
+for (const cat of ['Vin', 'Öl', 'Sprit']) addShame(PRODUCTS.filter((p) => p.category === cat), cat.toLowerCase());
+
 // ---------- Hjälpfunktioner ----------
 // OBS: samma regel finns i index.html, samst-apk.html och update-data.py.
 // Om de skulle skilja sig åt gör det inget – en "fel" slug 301-omdirigeras
@@ -318,6 +335,9 @@ h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing
 .producer{margin:.75rem 0 0;font-size:1.05rem}
 .pills{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1rem}
 .pill{font-size:.75rem;font-weight:600;padding:.3rem .7rem;border-radius:9999px;background:var(--bg-light);color:var(--cream)}
+.shame-tag{display:inline-flex;padding:3px;border-radius:9999px;text-decoration:none;background:repeating-linear-gradient(45deg,#FF6B4A 0 7px,#101010 7px 14px)}
+.shame-tag span{display:block;font-size:.75rem;font-weight:800;letter-spacing:.02em;padding:.2rem .65rem;border-radius:9999px;background:#1A1A1A;color:#FF6B4A}
+.shame-tag:hover span{background:#FF6B4A;color:#101010}
 .rankpill{background:var(--brand);color:var(--bg-dark)}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin:2rem 0}
 @media(min-width:720px){.stats{grid-template-columns:repeat(4,1fr)}}
@@ -414,6 +434,7 @@ function renderProductPage(p) {
       <span class="pill">#${nf.format(p.rank)} av ${nf.format(p.categoryTotal)} i ${esc(lower(p.category))}</span>
       ${p.packaging ? `<span class="pill">${esc(p.packaging)}</span>` : ''}
       ${p.new ? '<span class="pill rankpill">Nyinkommen</span>' : ''}
+      ${(SHAME.get(String(p.id)) || []).map((x) => `<a class="shame-tag" href="/samst-apk.html" title="Topp ${SHAME_N} på Sämst APK-listan"><span>#${x.rank} på skamlistan · ${esc(x.label)}</span></a>`).join('')}
     </div>
   </div>
 </section>
