@@ -44,6 +44,25 @@ for (const [key, list] of BY_SUB) {
   SUB_MEDIAN.set(key, list[Math.floor(list.length / 2)].apk);
 }
 
+// Länkar till startsidans topplista för kategori/underkategori.
+// Underkategorierna måste finnas som knappar på startsidan (SUBCATEGORIES i
+// index.html), annars länkar vi bara till huvudkategorin.
+const HOME_SUBCATEGORIES = {
+  'Vin': ['Rött vin', 'Vitt vin', 'Rosévin', 'Mousserande vin', 'Starkvin', 'Smaksatt vin & fruktvin', 'Glögg och Glühwein'],
+  'Öl': ['Ale', 'Ljus lager', 'Mellanmörk & Mörk lager', 'Veteöl', 'Porter & Stout', 'Syrlig öl', 'Annan öl'],
+  'Sprit': ['Whisky', 'Gin & Genever', 'Rom & Lagrad sockerrörssprit', 'Likör', 'Armagnac & Brandy', 'Akvavit & Kryddat brännvin', 'Grappa & Marc', 'Smaksatt sprit'],
+};
+function urlSlug(s) {
+  return String(s || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+function categoryHref(cat) {
+  return `/?kategori=${urlSlug(cat)}`;
+}
+function subcategoryHref(cat, sub) {
+  if (!sub || !(HOME_SUBCATEGORIES[cat] || []).includes(sub)) return categoryHref(cat);
+  return `/?kategori=${urlSlug(cat)}&typ=${urlSlug(sub)}`;
+}
+
 // ---------- Hjälpfunktioner ----------
 // OBS: samma regel finns i index.html, samst-apk.html och update-data.py.
 // Om de skulle skilja sig åt gör det inget – en "fel" slug 301-omdirigeras
@@ -318,6 +337,8 @@ h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing
 .producer{margin:.75rem 0 0;font-size:1.05rem}
 .pills{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1rem}
 .pill{font-size:.75rem;font-weight:600;padding:.3rem .7rem;border-radius:9999px;background:var(--bg-light);color:var(--cream)}
+.pills a.pill{text-decoration:none;transition:filter .15s ease,box-shadow .15s ease}
+.pills a.pill:hover{box-shadow:0 0 0 1.5px var(--accent)}
 .rankpill{background:var(--brand);color:var(--bg-dark)}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin:2rem 0}
 @media(min-width:720px){.stats{grid-template-columns:repeat(4,1fr)}}
@@ -402,7 +423,7 @@ function renderProductPage(p) {
   ];
 
   const body = `
-<nav class="crumbs" aria-label="Brödsmulor"><a href="/">Topplistan</a><span>›</span><span>${esc(p.category)}</span>${p.subcategory ? `<span>›</span><span>${esc(p.subcategory)}</span>` : ''}</nav>
+<nav class="crumbs" aria-label="Brödsmulor"><a href="/">Topplistan</a><span>›</span><a href="${esc(categoryHref(p.category))}">${esc(p.category)}</a>${p.subcategory ? `<span>›</span><a href="${esc(subcategoryHref(p.category, p.subcategory))}">${esc(p.subcategory)}</a>` : ''}</nav>
 <section class="hero">
   <div class="hero-img">${img}</div>
   <div>
@@ -410,8 +431,8 @@ function renderProductPage(p) {
     <h1>${esc(p.name)}</h1>
     ${p.producer ? `<p class="producer">${esc(p.producer)}</p>` : ''}
     <div class="pills">
-      <span class="pill rankpill">#${nf.format(subRank)} av ${nf.format(subTotal)} i ${esc(lower(sub))}</span>
-      <span class="pill">#${nf.format(p.rank)} av ${nf.format(p.categoryTotal)} i ${esc(lower(p.category))}</span>
+      <a class="pill rankpill" href="${esc(subcategoryHref(p.category, p.subcategory))}">#${nf.format(subRank)} av ${nf.format(subTotal)} i ${esc(lower(sub))}</a>
+      <a class="pill" href="${esc(categoryHref(p.category))}">#${nf.format(p.rank)} av ${nf.format(p.categoryTotal)} i ${esc(lower(p.category))}</a>
       ${p.packaging ? `<span class="pill">${esc(p.packaging)}</span>` : ''}
       ${p.new ? '<span class="pill rankpill">Nyinkommen</span>' : ''}
     </div>
