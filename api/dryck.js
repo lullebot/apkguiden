@@ -229,8 +229,7 @@ function productDescription(p) {
   else if (pairing) parts.push(cap(pairing) + '.');
   if (d.e) parts.push('Ekologiskt producerad.');
 
-  const hasFacts = Object.keys(d).length > 0;
-  return `<p>${parts.join(' ')}</p>${hasFacts ? '<p class="source">Beskrivningen bygger på Systembolagets produktdata.</p>' : ''}`;
+  return `<p>${parts.join(' ')}</p>`;
 }
 
 // ---------- Jämförelsen: hur bra är APK:n egentligen? ----------
@@ -375,7 +374,6 @@ h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing
 .prose{max-width:42rem;font-size:1.05rem}
 .prose strong{color:var(--accent)}
 .prose p{margin:0 0 .9rem}
-.source{font-size:.8rem;opacity:.65}
 .facts{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.6rem}
 .facts li{padding-left:1.1rem;position:relative}
 .facts li::before{content:'';position:absolute;left:0;top:.6em;width:.4rem;height:.4rem;border-radius:50%;background:var(--accent)}
