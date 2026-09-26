@@ -596,7 +596,10 @@
       display: flex;
       gap: 0.875rem;
       align-items: flex-start;
-      flex: 1;
+      /* Innehållet ställs ner mot pris-raden, så kort utan "BÄST APK"-bricka
+         (plats 2 och 3) inte svävar mitt i kortet. */
+      flex: 0 0 auto;
+      margin-top: auto;
       min-width: 0;
       margin-bottom: 0.5rem;
     }
