@@ -1717,6 +1717,9 @@
         // antal (inte bara topplistans 1500).
         loadSearchData().then(() => {
           if (searchData && searchData.length) {
+            // Rita om topplistan från hela sortimentet (fler träffar i små
+            // underkategorier och med prisfilter). Inte mitt i en sökning.
+            if (!searchQuery) renderTopList();
             dataMeta.count = searchData.length;
             const el = document.getElementById('statCount');
             if (el) el.textContent = formatNumber(searchData.length);
@@ -2174,10 +2177,16 @@
         ? `Inga produkter under ${formatNumber(maxPrice)} kr i den här kategorin. Höj prisgränsen för fler.`
         : 'Inga produkter i den här kategorin.';
 
+      // Källa: hela sortimentet (search-data.json) så fort det är laddat.
+      // data.json har bara topp 500 per huvudkategori – där hamnar t.ex. bara
+      // 6 av 296 mousserande viner, eftersom de har låg APK. Hela sortimentet
+      // förladdas i bakgrunden direkt efter första visningen (se init).
+      const source = (searchData && searchData.length) ? searchData : allProducts;
+
       // Filtrera baserat på huvudkategori + ev. underkategori
       let filtered = selectedCategory === 'Alla'
-        ? allProducts
-        : allProducts.filter(p => p.category === selectedCategory);
+        ? source
+        : source.filter(p => p.category === selectedCategory);
       if (selectedSubcategory) {
         filtered = filtered.filter(p => matchesSubcategory(p, selectedSubcategory));
       }
