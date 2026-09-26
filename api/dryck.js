@@ -329,7 +329,10 @@ a{color:var(--brand)}
 .crumbs a:hover{color:var(--accent)}
 .hero{display:grid;grid-template-columns:1fr;gap:1.5rem;align-items:center;padding-bottom:2rem;border-bottom:1px solid var(--line)}
 @media(min-width:720px){.hero{grid-template-columns:14rem 1fr;gap:2.5rem}}
-.hero-img{background:var(--bg-light);border-radius:1.25rem;aspect-ratio:1;display:flex;align-items:center;justify-content:center;padding:1rem;max-width:14rem;width:100%;margin:0 auto}
+/* Fast höjd, inte aspect-ratio: Safari (alla webbläsare på iPhone) räknar inte
+   en höjd från aspect-ratio som bestämd, så bildens max-height:100% ignorerades
+   och höga burkar/flaskor visades i full storlek utanför rutan. */
+.hero-img{background:var(--bg-light);border-radius:1.25rem;display:flex;align-items:center;justify-content:center;padding:1rem;width:14rem;height:14rem;max-width:100%;margin:0 auto;overflow:hidden}
 .hero-img img{max-width:100%;max-height:100%;object-fit:contain}
 .img-fallback{width:40%;color:var(--muted)}
 .eyebrow{font-size:.75rem;letter-spacing:.25em;text-transform:uppercase;font-weight:600;color:var(--muted);margin:0 0 .75rem}
