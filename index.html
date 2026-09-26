@@ -185,31 +185,6 @@
     }
     .logo-tld { color: var(--yellow-muted); }
 
-    .shame-link {
-      display: flex;
-      align-items: center;
-      gap: 0.375rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--cream);
-      text-decoration: none;
-      padding: 0.5rem 0.875rem;
-      border-radius: 9999px;
-      border: 1.5px solid rgba(244, 211, 94, 0.2);
-      white-space: nowrap;
-      transition: all 0.2s ease;
-      flex-shrink: 0;
-    }
-    .shame-link:hover { border-color: var(--yellow); color: var(--yellow); }
-    .shame-link-full { display: none; }
-    .shame-link-short { display: inline; }
-    @media (min-width: 480px) {
-      .shame-link-full { display: inline; }
-      .shame-link-short { display: none; }
-    }
-    @media (max-width: 359px) {
-      .shame-link { padding: 0.5rem 0.625rem; }
-    }
     .live-indicator {
       display: none;
       align-items: center;
@@ -1079,6 +1054,9 @@
       text-underline-offset: 3px;
     }
     .footer-col-body a:hover { text-decoration-color: var(--yellow); }
+    .footer-links { font-size: 0.875rem; color: var(--cream); margin-bottom: 1.25rem; }
+    .footer-links a { color: var(--yellow); }
+    .footer-links a.footer-shame { color: #FF6B4A; }
     .footer-bottom {
       padding-top: 1.5rem;
       border-top: 1px solid rgba(244, 211, 94, 0.12);
@@ -1393,10 +1371,6 @@
           <span id="liveText">Laddar data…</span>
         </div>
       </div>
-      <a href="/samst-apk.html" class="shame-link">
-        <span class="shame-link-full">Sämst APK</span><span class="shame-link-short">Sämst</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-      </a>
     </div>
   </header>
 
@@ -1599,6 +1573,7 @@
           </div>
         </div>
       </div>
+      <nav class="footer-links" aria-label="Fler sidor"><a href="/">Topplistan</a> · <a href="/standardglas.html">Vad är ett standardglas?</a> · <a class="footer-shame" href="/samst-apk.html">Sämst APK</a></nav>
       <div class="footer-bottom">
         <div>apkguiden.se</div>
         <div>Senast uppdaterat <span id="lastUpdated">–</span></div>

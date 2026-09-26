@@ -280,7 +280,7 @@ ${body}
 </main>
 <footer class="footer"><div class="wrap">
   <p>Data från Systembolagets fasta sortiment, uppdateras varje vecka. APK = volym (ml) × alkoholhalt ÷ pris. apkguiden.se är ett prisjämförelseverktyg och är inte knutet till Systembolaget. 18-årsgräns gäller.</p>
-  <p><a href="/">Topplistan</a> · <a href="/samst-apk.html">Sämst APK</a> · <a href="/standardglas.html">Vad är ett standardglas?</a></p>
+  <p><a href="/">Topplistan</a> · <a href="/standardglas.html">Vad är ett standardglas?</a> · <a class="footer-shame" href="/samst-apk.html">Sämst APK</a></p>
 </div></footer>
 </body>
 </html>`;
@@ -356,6 +356,7 @@ h2{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;color:var(--accent);ma
 .card-price{font-size:.8rem}
 .footer{margin-top:4rem;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted);padding:1.5rem 0 2.5rem}
 .footer a{color:var(--muted)}
+.footer a.footer-shame{color:#FF6B4A}
 `;
 
 function renderProductPage(p) {
