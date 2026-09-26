@@ -231,6 +231,10 @@ function comparison(p, subRank, subTotal, median) {
   const list = BY_SUB.get(key) || [];
   const out = [];
 
+  // standardglas.html lovar pris per glas på varje dryck – det står här.
+  const glas = standardDrinks(p);
+  out.push(`Ett <a href="/standardglas.html">standardglas</a> kostar <strong>${kr(Math.round((p.price / glas) * 100) / 100)} kr</strong> – förpackningen räcker till ${nf1.format(glas)} glas.`);
+
   const diff = median > 0 ? Math.round((p.apk / median - 1) * 100) : 0;
   if (diff > 0) out.push(`Den ger <strong>${nf.format(diff)} % mer alkohol per krona</strong> än medianen för ${esc(sub)} (${median.toFixed(2)} ml/kr).`);
   else if (diff < 0) out.push(`Den ger <strong>${nf.format(Math.abs(diff))} % mindre alkohol per krona</strong> än medianen för ${esc(sub)} (${median.toFixed(2)} ml/kr).`);
@@ -345,21 +349,15 @@ h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1;letter-spacing
 .pills a.pill{text-decoration:none;transition:filter .15s ease,box-shadow .15s ease}
 .pills a.pill:hover{box-shadow:0 0 0 1.5px var(--accent)}
 .rankpill{background:var(--brand);color:var(--bg-dark)}
-/* En extra rad i ett kort sträcker alla kort i raden, så antal glas står på
-   samma rad som glaspriset. Fyra kolumner först när raden rymmer det, och lite
-   tätare kort på smala mobiler. minmax(0,1fr): ett långt pris får inte göra
-   sin kolumn bredare och klämma grannkortet så att dess text bryts. */
+/* Ett värde per kort: en extra rad i ett kort sträcker alla kort i raden.
+   minmax(0,1fr): ett långt pris får inte göra sin kolumn bredare och klämma
+   grannkortet så att dess text bryts. */
 .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin:2rem 0}
-@media(min-width:960px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:720px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .stat{background:var(--bg-light);border-radius:1rem;padding:1rem 1.1rem}
-.stat-link{color:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
-.stat-link:hover{color:var(--cream)}
 .stat-label{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;font-weight:600;color:var(--muted)}
 .stat-value{font-size:1.6rem;font-weight:800;color:var(--cream);margin-top:.25rem;letter-spacing:-.02em}
 .stat-value small{font-size:.8rem;font-weight:600;color:var(--muted);margin-left:.2rem;white-space:nowrap}
-/* Volym och alkoholhalt är lika viktiga: båda talen i full storlek, enheterna små */
-.stat-sep{margin:0 .3rem 0 .35rem;font-weight:500;color:var(--muted)}
-@media(max-width:419px){.stats{gap:.5rem}.stat{padding:.875rem .75rem}.stat-value{font-size:clamp(1.25rem,6vw,1.6rem)}}
 .stat.main{background:var(--accent)}
 .stat.main .stat-label,.stat.main .stat-value,.stat.main small{color:var(--bg-dark)}
 .stat-label,.card-meta,.crumbs,.crumbs a,.eyebrow{opacity:.9}
@@ -398,7 +396,6 @@ function renderProductPage(p) {
   const subTotal = subList.length;
   const median = SUB_MEDIAN.get(key) || 0;
   const canonical = SITE + productPath(p);
-  const glas = standardDrinks(p);
   const [volNum, volUnit] = volumeShort(p.volume).split(' ');
   const sub = p.subcategory || p.category;
 
@@ -454,8 +451,8 @@ function renderProductPage(p) {
 <section class="stats">
   <div class="stat main"><div class="stat-label">APK</div><div class="stat-value num">${p.apk.toFixed(2)}<small>ml/kr</small></div></div>
   <div class="stat"><div class="stat-label">Pris</div><div class="stat-value num">${kr(p.price)}<small>kr</small></div></div>
-  <div class="stat"><div class="stat-label">Volym · Alkohol</div><div class="stat-value num">${esc(volNum)}<small>${esc(volUnit)}</small><wbr><span class="stat-sep">·</span>${nf1.format(p.alcohol)}<small>%</small></div></div>
-  <div class="stat"><div class="stat-label"><a class="stat-link" href="/standardglas.html">Pris per glas <span aria-hidden="true">ⓘ</span></a></div><div class="stat-value num">${kr(Math.round((p.price / glas) * 100) / 100)}<small>kr</small><wbr><small title="${nf1.format(glas)} glas i förpackningen">· ${nf1.format(glas)} glas</small></div></div>
+  <div class="stat"><div class="stat-label">Volym</div><div class="stat-value num">${esc(volNum)}<small>${esc(volUnit)}</small></div></div>
+  <div class="stat"><div class="stat-label">Alkohol</div><div class="stat-value num">${nf1.format(p.alcohol)}<small>%</small></div></div>
 </section>
 <a class="cta" href="${esc(systembolagetUrl(p))}" target="_blank" rel="noopener noreferrer">Se ${esc(p.name)} hos Systembolaget ↗</a>
 <h2>Om drycken</h2>
