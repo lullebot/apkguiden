@@ -58,6 +58,13 @@ SITEMAP_PATH = Path(__file__).resolve().parent.parent / "sitemap.xml"
 PRODUCT_SITEMAP_PATH = Path(__file__).resolve().parent.parent / "sitemap-drycker.xml"
 SITE_URL = "https://apkguiden.se"
 
+# Produktbeskrivningar för dryckessidorna (/dryck/...). Bara strukturerad
+# fakta (stil, ursprung, druvor, smakklockor, smaknoter, serveringstemperatur,
+# passar till) – ingen av Systembolagets löptexter kopieras rakt av.
+# Sidan skriver ihop en egen beskrivning av det här. Läses bara av
+# api/dryck.js, aldrig av webbläsaren.
+DETAILS_OUTPUT_PATH = Path(__file__).resolve().parent.parent / "product-details.json"
+
 # Hur många av topplistans produkter som skrivs in som statisk text/JSON-LD
 # i index.html, för sökmotorer som inte (fullt ut, eller i tid) kör JS.
 SEO_STATIC_TOP_N = 20
@@ -81,6 +88,56 @@ KEEP_CATEGORIES = {"Vin", "Öl", "Sprit", "Cider & Blanddrycker"}
 CATEGORY_MAP = {
     "Cider & Blanddrycker": "Cider",
 }
+
+
+def extract_details(product: dict) -> dict:
+    """Plocka ut fakta för produktbeskrivningen. Korta nycklar håller
+    filen liten (~1–2 MB för hela sortimentet)."""
+    d: dict = {}
+    style = (product.get("categoryLevel3") or "").strip()
+    if style:
+        d["s"] = style
+    country = product.get("country")
+    if isinstance(country, dict):
+        country = country.get("name") or country.get("value") or ""
+    region = (product.get("originLevel1") or "").strip()
+    if region and region != country:
+        d["o"] = region
+    grapes = [g for g in (product.get("grapes") or []) if isinstance(g, str) and g.strip()]
+    if grapes:
+        d["g"] = grapes[:4]
+    if product.get("vintage"):
+        d["v"] = str(product["vintage"])
+    if product.get("isOrganic"):
+        d["e"] = 1
+    # Smakklockor (0–12). Bara de som Systembolaget faktiskt angett – en
+    # nolla i fältet betyder oftast "inte angiven", inte "noll".
+    key_map = {"TasteClockBody": "b", "TasteClockSweetness": "s", "TasteClockFruitacid": "f",
+               "TasteClockBitter": "t", "TasteClockRoughness": "r", "TasteClockSmokiness": "k"}
+    clocks = {}
+    for c in product.get("tasteClocks") or []:
+        k = key_map.get((c or {}).get("key"))
+        if k and isinstance(c.get("value"), (int, float)):
+            clocks[k] = c["value"]
+    if clocks:
+        d["c"] = clocks
+    # Smaknoter: bara listan efter "inslag av" – enskilda ord, inte texten.
+    taste = product.get("taste") or ""
+    m = re.search(r"inslag av ([^.]+)", taste, flags=re.I)
+    if m:
+        notes = [n.strip() for n in re.split(r",| och ", m.group(1)) if n.strip()]
+        if notes:
+            d["n"] = notes[:6]
+    usage = product.get("usage") or ""
+    m = re.search(r"(\d+)\s*[-–]\s*(\d+)\s*°", usage)
+    if m:
+        d["t"] = f"{m.group(1)}–{m.group(2)}"
+    elif "rumstemp" in usage.lower():
+        d["t"] = "rum"
+    symbols = [x for x in (product.get("tasteSymbols") or []) if isinstance(x, str)]
+    if symbols:
+        d["p"] = symbols[:6]
+    return d
 
 
 def compute_apk(product: dict) -> float:
@@ -624,6 +681,20 @@ def main() -> int:
     update_index_html(final[:SEO_STATIC_TOP_N], category_leaders)
     touch_sitemap_lastmod()
     write_product_sitemap(search_full)
+
+    # ===== 4) Fakta för dryckessidornas beskrivning =====
+    keep_ids = {p["id"] for p in search_full if p.get("id")}
+    details = {}
+    for raw in filtered:
+        pid = str(raw.get("productNumber") or "")
+        if pid in keep_ids and pid not in details:
+            d = extract_details(raw)
+            if d:
+                details[pid] = d
+    with DETAILS_OUTPUT_PATH.open("w", encoding="utf-8") as f:
+        json.dump(details, f, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    print(f"Skrev beskrivningsfakta för {len(details):,} produkter till {DETAILS_OUTPUT_PATH.name} "
+          f"({DETAILS_OUTPUT_PATH.stat().st_size / 1024:.0f} KB)", flush=True)
 
     return 0
 
