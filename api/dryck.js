@@ -301,9 +301,9 @@ function page({ title, metaDescription, canonical, jsonLd, body, noindex, ogImag
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(metaDescription)}">
 ${noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" href="${esc(canonical)}">`}
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <meta name="theme-color" content="#0F3D2E">
 <meta property="og:type" content="website">
@@ -311,7 +311,7 @@ ${noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" hr
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(metaDescription)}">
 ${canonical ? `<meta property="og:url" content="${esc(canonical)}">` : ''}
-<meta property="og:image" content="${esc(ogImage || SITE + '/favicon-512.png')}">
+<meta property="og:image" content="${esc(ogImage || SITE + '/icon-512.png')}">
 <meta property="og:locale" content="sv_SE">
 <meta name="twitter:card" content="summary">
 ${jsonLd ? jsonLd.map((j) => `<script type="application/ld+json">${JSON.stringify(j).replace(/</g, '\\u003c')}</script>`).join('\n') : ''}
@@ -322,7 +322,7 @@ ${jsonLd ? jsonLd.map((j) => `<script type="application/ld+json">${JSON.stringif
 </head>
 <body>
 <header class="top-nav"><div class="wrap nav-inner">
-  <a href="/" class="logo" aria-label="apkguiden.se – till startsidan"><img class="logo-mark" src="/favicon.svg" alt="APK" width="48" height="48"></a>
+  <a href="/" class="logo" aria-label="apkguiden.se – till startsidan"><img class="logo-mark" src="/icon.svg" alt="APK" width="48" height="48"></a>
   <a href="/" class="back-link">← Hela topplistan</a>
 </div></header>
 <main class="wrap">
