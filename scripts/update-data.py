@@ -439,23 +439,15 @@ def render_static_seo_html(top_overall: list[dict], category_leaders: list[tuple
 
 
 def render_itemlist_jsonld(top_overall: list[dict]) -> str:
-    """Bygg ItemList/Product-strukturerad data för topplistan (se
-    SEO_ITEMLIST_JSONLD_START/END i index.html)."""
+    """Bygg ItemList-strukturerad data för topplistan (se
+    SEO_ITEMLIST_JSONLD_START/END i index.html). Bara position + länk till
+    dryckens egen sida – listraderna märks INTE upp som Product/Offer
+    (Google räknar dem då som ofullständiga butiksprodukter). Product-
+    uppmärkningen finns på varje dryckessida (api/dryck.js)."""
     items = []
     for idx, p in enumerate(top_overall, start=1):
-        product: dict = {"@type": "Product", "name": p.get("name") or ""}
         if p.get("id"):
-            product["url"] = SITE_URL + product_path(p)
-        if p.get("producer"):
-            product["brand"] = {"@type": "Brand", "name": p["producer"]}
-        if p.get("price"):
-            product["offers"] = {
-                "@type": "Offer",
-                "price": str(p["price"]),
-                "priceCurrency": "SEK",
-                "availability": "https://schema.org/InStock",
-            }
-        items.append({"@type": "ListItem", "position": idx, "item": product})
+            items.append({"@type": "ListItem", "position": idx, "url": SITE_URL + product_path(p)})
 
     data = {
         "@context": "https://schema.org",
