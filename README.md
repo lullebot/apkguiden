@@ -2,6 +2,8 @@
 
 > En topplista över Systembolagets sortiment, rangordnad efter alkohol per krona (APK).
 
+**Live:** [apkguiden.se](https://apkguiden.se)
+
 Sajten är en helt statisk HTML-fil som hämtar produktdata från en `data.json`. En GitHub Actions-bot uppdaterar `data.json` automatiskt varje dag mot ett offentligt GitHub-projekt som speglar Systembolagets sortiment.
 
 ---
@@ -110,6 +112,17 @@ Spara filen, committa till GitHub, och kör Action-workflowen igen för att se �
 ### Justera designen
 
 Allt i `index.html`. Färgerna ligger som CSS-variabler högst upp (`--green`, `--yellow` osv).
+
+### Indexering i Google
+
+Alla drycker har en egen sida (`/dryck/<id>-<namn>`), men Google får bara indexera ett urval:
+
+- **topp 20 i varje underkategori** (`INDEX_TOP_PER_SUBCATEGORY` i `scripts/update-data.py`), och
+- **sidor som redan fått klick från Google** – produkt-id:n i `keep-indexed.json`.
+
+Urvalet räknas fram varje vecka av `update-data.py`, som sätter `"index": true` på de dryckerna i `search-data.json` och bara listar dem i `sitemap-drycker.xml`. Övriga sidor fungerar som vanligt för besökare men får `<meta name="robots" content="noindex">` (se `api/dryck.js`).
+
+Varför: Google nedgraderade hela sajten 30 okt 2026, troligen för att ~7 300 nästan likadana dryckessidor såg massproducerade ut. Färre men bättre sidor i Googles index är det främsta sättet att vända det.
 
 ---
 

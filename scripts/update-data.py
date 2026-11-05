@@ -52,11 +52,19 @@ SEARCH_OUTPUT_PATH = Path(__file__).resolve().parent.parent / "search-data.json"
 INDEX_HTML_PATH = Path(__file__).resolve().parent.parent / "index.html"
 SITEMAP_PATH = Path(__file__).resolve().parent.parent / "sitemap.xml"
 
-# Sitemap med en rad per dryck (/dryck/<id>-<namn>). Sidorna själva byggs
-# av Vercel-funktionen api/dryck.js – här listar vi bara adresserna så
-# Google hittar alla.
+# Sitemap med en rad per indexerbar dryck (/dryck/<id>-<namn>). Sidorna själva
+# byggs av Vercel-funktionen api/dryck.js – här listar vi bara adresserna till
+# de sidor Google får indexera (se mark_indexable()).
 PRODUCT_SITEMAP_PATH = Path(__file__).resolve().parent.parent / "sitemap-drycker.xml"
 SITE_URL = "https://apkguiden.se"
+
+# Vilka dryckessidor Google får indexera. Google nedgraderade hela sajten
+# 30 okt 2026, troligen för att ~7 300 nästan likadana dryckessidor såg
+# massproducerade ut. Därför indexeras bara topp N i varje underkategori plus
+# sidor som redan fått klick från Google (keep-indexed.json). Övriga sidor finns
+# kvar för besökare men får noindex (api/dryck.js) och står inte i sitemapen.
+INDEX_TOP_PER_SUBCATEGORY = 20
+KEEP_INDEXED_PATH = Path(__file__).resolve().parent.parent / "keep-indexed.json"
 
 # Produktbeskrivningar för dryckessidorna (/dryck/...). Bara strukturerad
 # fakta (stil, ursprung, druvor, smakklockor, smaknoter, serveringstemperatur,
@@ -385,11 +393,48 @@ def product_link_html(p: dict) -> str:
     return f'<a href="{html.escape(product_path(p))}">{name}</a>'
 
 
+def apk_sort_key(p: dict):
+    """APK desc → pris asc → namn asc. Samma ordning som sort_key i main()."""
+    return (-p["apk"], p.get("price") or float("inf"), p.get("name") or "")
+
+
+def load_keep_indexed() -> set:
+    """Produkt-id:n i keep-indexed.json (sidor som fått klick från Google)."""
+    if not KEEP_INDEXED_PATH.exists():
+        return set()
+    try:
+        data = json.loads(KEEP_INDEXED_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        print(f"VARNING: kunde inte läsa {KEEP_INDEXED_PATH.name}: {e}", file=sys.stderr)
+        return set()
+    return {str(i) for i in data.get("ids", [])}
+
+
+def mark_indexable(products: list[dict]) -> int:
+    """Sätt "index": True på drycker vars sida Google får indexera: topp
+    INDEX_TOP_PER_SUBCATEGORY i sin underkategori (samma gruppering som
+    rank-taggen på dryckessidan) eller listade i keep-indexed.json. Övriga
+    lämnas utan fältet – api/dryck.js ger dem noindex och de utelämnas ur
+    sitemap-drycker.xml. Returnerar antalet indexerbara."""
+    keep = load_keep_indexed()
+    groups: dict[str, list] = {}
+    for p in products:
+        p.pop("index", None)
+        groups.setdefault(p.get("subcategory") or p.get("category"), []).append(p)
+    count = 0
+    for items in groups.values():
+        for pos, p in enumerate(sorted(items, key=apk_sort_key), start=1):
+            if pos <= INDEX_TOP_PER_SUBCATEGORY or str(p.get("id")) in keep:
+                p["index"] = True
+                count += 1
+    return count
+
+
 def write_product_sitemap(products: list[dict]) -> None:
-    """Skriv sitemap-drycker.xml med alla drycker. Ingen <lastmod> per rad –
-    då ändras filen bara när sortimentet faktiskt ändras (nya/utgångna
-    produkter), inte varje vecka."""
-    urls = sorted({product_path(p) for p in products if p.get("id")})
+    """Skriv sitemap-drycker.xml med de indexerbara dryckerna (se
+    mark_indexable()). Ingen <lastmod> per rad – då ändras filen bara när
+    urvalet faktiskt ändras, inte varje vecka."""
+    urls = sorted({product_path(p) for p in products if p.get("id") and p.get("index")})
     lines = ['<?xml version="1.0" encoding="UTF-8"?>',
              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for u in urls:
@@ -613,6 +658,11 @@ def main() -> int:
         for idx, p in enumerate(items, start=1):
             p["rank"] = idx
             p["categoryTotal"] = len(items)
+
+    # ===== Indexering: vilka dryckessidor Google får indexera =====
+    # Måste ske före search-data.json skrivs – api/dryck.js läser fältet därifrån.
+    indexable = mark_indexable(transformed)
+    print(f"Indexerbara dryckessidor: {indexable:,} av {len(transformed):,}", flush=True)
 
     # ===== 1) Skriv search-data.json: hela sortimentet, sorterat =====
     # Detta är den fullständiga "sökindex"-filen som sajten lazy-loadar
