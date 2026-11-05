@@ -44,6 +44,20 @@ for (const [key, list] of BY_SUB) {
   SUB_MEDIAN.set(key, list[Math.floor(list.length / 2)].apk);
 }
 
+// ---------- Indexering ----------
+// Google får bara indexera en del av dryckessidorna: topp 20 i varje
+// underkategori + sidor som redan fått klick från Google (keep-indexed.json).
+// Urvalet görs i scripts/update-data.py, som sätter "index": true i
+// search-data.json och bara listar de sidorna i sitemap-drycker.xml. Övriga
+// sidor finns kvar för besökare men får <meta name="robots" content="noindex">.
+// Bakgrund: Google nedgraderade hela sajten 30 okt 2026, troligen för att
+// ~7 300 nästan likadana dryckessidor såg massproducerade ut.
+// Saknar datan helt index-fältet (äldre data) indexeras allt, som förut.
+const HAS_INDEX_FLAGS = PRODUCTS.some((p) => p.index === true);
+function isIndexable(p) {
+  return !HAS_INDEX_FLAGS || p.index === true;
+}
+
 // Länkar till startsidans topplista för kategori/underkategori.
 // Underkategorierna måste finnas som knappar på startsidan (SUBCATEGORIES i
 // index.html), annars länkar vi bara till huvudkategorin.
@@ -488,7 +502,7 @@ function renderProductPage(p) {
 ${similar.length ? `<h2>Liknande APK bland ${esc(lower(sub))}</h2><div class="cards">${similar.map(renderCard).join('')}</div>` : ''}
 ${best.length ? `<h2>Bäst APK bland ${esc(lower(sub))}</h2><div class="cards">${best.map(renderCard).join('')}</div>` : ''}
 `;
-  return page({ title, metaDescription, canonical, jsonLd, body, ogImage: p.image ? `${p.image}_800.png` : null });
+  return page({ title, metaDescription, canonical, jsonLd, body, noindex: !isIndexable(p), ogImage: p.image ? `${p.image}_800.png` : null });
 }
 
 function renderNotFound() {
@@ -541,3 +555,4 @@ module.exports = (req, res) => {
 // Exporteras för sitemap/tester
 module.exports.slugify = slugify;
 module.exports.productPath = productPath;
+module.exports.isIndexable = isIndexable;
