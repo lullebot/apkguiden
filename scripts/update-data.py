@@ -30,7 +30,8 @@ import time
 import unicodedata
 import urllib.request
 import urllib.error
-from datetime import datetime, timezone
+import urllib.parse
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 # Systembolagets officiella e-commerce-API. Samma endpoint som
@@ -38,8 +39,43 @@ from pathlib import Path
 # nätverksanrop i deras webbläsare-frontend).
 API_BASE = "https://api-extern.systembolaget.se/sb-api-ecommerce/v1/productsearch/search"
 API_KEY = "cfc702aed3094c86b92d6d4ff7a54c84"
-PAGE_SIZE = 30  # Vad API:et tycks vara optimerat för
-MAX_PAGES = 1500  # Säkerhetsventil – sortimentet är ~25k produkter / 30 = ~830 sidor
+PAGE_SIZE = 30  # API:ets maxstorlek per sida
+MAX_PAGES = 400  # Säkerhetsventil per sökning
+
+# API:et lämnar aldrig ut mer än 333 sidor × 30 = 9 990 träffar per sökning,
+# oavsett hur många som finns. Före nov 2026 hämtade skriptet hela sortimentet
+# (~27 800) i en enda sökning och fick därför bara de första 9 990 – i en
+# ordning som skiftar mellan körningarna. Följden blev att 1 000–1 600 drycker
+# försvann och dök upp igen varje vecka (deras sidor gav 404 under tiden).
+# Nu söker vi bara i de sortiment som ska visas (ett par tusen drycker), med
+# fast sorteringsordning, och kontrollerar att vi fått med allt.
+MAX_RESULTS_PER_QUERY = 9990
+
+# Vilka av Systembolagets sortiment sajten visar. "Fast sortiment" = det
+# ordinarie sortimentet som finns i butikerna (~3 200 artiklar, nov 2026).
+# Vill man ha med fler: lägg till t.ex. "Tillfälligt sortiment" i listan.
+ASSORTMENTS = ["Fast sortiment"]
+
+# Sorteringsordningar att prova i tur och ordning tills alla träffar hämtats.
+# Ger en ordning dubbletter/luckor (lika namn osv.) fyller nästa i resten.
+# Test 17 nov 2026 (fasta sortimentet, 3 159 st): ett varv sorterat på namn gav
+# 3 136 unika, på pris 2 795, utan sortering 2 999 – därför flera varv.
+SORT_PASSES = [("Name", "Ascending"), ("Price", "Ascending"), ("Name", "Descending"), ("Volume", "Ascending")]
+
+# Minsta andel av API:ets docCount vi måste få med, annars avbryts körningen
+# hellre än att skriva över bra data med en halv lista.
+MIN_COVERAGE = 0.95
+MIN_PRODUCTS = 1000
+
+# En dryck som saknas i en körning (tillfälligt slut i lager, API-hicka) får
+# ligga kvar med senast kända uppgifter så här länge innan sidan tas bort.
+GRACE_DAYS = 21
+
+# Prishistorik per dryck, en rad per prisändring. Läses av api/dryck.js
+# (dryckessidornas prishistorik) och api/prisandringar.js (/prisandringar).
+PRICE_HISTORY_PATH = Path(__file__).resolve().parent.parent / "price-history.json"
+# Hur länge historiken för en dryck som inte längre finns sparas.
+HISTORY_KEEP_DAYS = 365
 
 # Var data.json hamnar (relativt repo-rot)
 OUTPUT_PATH = Path(__file__).resolve().parent.parent / "data.json"
@@ -224,6 +260,9 @@ def is_eligible(product: dict) -> bool:
     cat = product.get("categoryLevel1") or ""
     if cat not in KEEP_CATEGORIES:
         return False
+    # Extra skydd om API:et någon gång skulle strunta i sortimentsfiltret.
+    if product.get("assortmentText") not in ASSORTMENTS:
+        return False
     return True
 
 
@@ -264,36 +303,37 @@ def dedupe_lookalikes(products: list[dict]) -> tuple[list[dict], int]:
     return result, len(products) - len(result)
 
 
-def load_previous_ids() -> set:
-    """Läs förra körningens search-data.json och returnera mängden produkt-id.
+def load_previous() -> tuple[dict, bool]:
+    """Läs förra körningens search-data.json.
 
-    Används för att avgöra vilka produkter som är NYINKOMNA: en produkt vars id
-    inte fanns i förra veckans fil räknas som ny. Första gången skriptet körs
-    (ingen tidigare fil finns) returneras en tom mängd, vilket gör att inget
-    markeras som nytt – då etableras bara en baslinje.
+    Returnerar (produkter per id, samma_urval). samma_urval är True om förra
+    filen byggdes med samma ASSORTMENTS som nu – bara då är jämförelser mot
+    förra veckan meningsfulla (nyinkommet-märkning och att låta tillfälligt
+    saknade drycker ligga kvar). Första körningen efter att urvalet ändrats
+    blir därför en ny baslinje.
     """
     if not SEARCH_OUTPUT_PATH.exists():
-        print("Ingen tidigare search-data.json hittad – etablerar baslinje "
-              "(inget markeras som nyinkommet denna körning).", flush=True)
-        return set()
+        print("Ingen tidigare search-data.json hittad – etablerar baslinje.", flush=True)
+        return {}, False
     try:
         with SEARCH_OUTPUT_PATH.open(encoding="utf-8") as f:
             prev = json.load(f)
-        prev_ids = {
-            str(p["id"]) for p in prev.get("products", []) if p.get("id")
-        }
-        print(f"Läste {len(prev_ids):,} produkt-id från förra körningen.", flush=True)
-        return prev_ids
     except Exception as e:
         # Hellre inga nya-badges än att krascha hela uppdateringen.
         print(f"VARNING: kunde inte läsa tidigare search-data.json ({e}); "
-              "inget markeras som nyinkommet denna körning.", flush=True)
-        return set()
+              "inget jämförs med förra körningen.", flush=True)
+        return {}, False
+    by_id = {str(p["id"]): p for p in prev.get("products", []) if p.get("id")}
+    same = prev.get("assortments") == ASSORTMENTS
+    print(f"Läste {len(by_id):,} produkter från förra körningen"
+          f"{'' if same else ' (annat urval än nu – ny baslinje)'}.", flush=True)
+    return by_id, same
 
 
-def fetch_page(page: int) -> dict:
+def fetch_page(page: int, params: dict | None = None) -> dict:
     """Hämta en sida med produkter från Systembolagets API."""
-    url = f"{API_BASE}?page={page}&size={PAGE_SIZE}"
+    query = {"page": page, "size": PAGE_SIZE, **(params or {})}
+    url = f"{API_BASE}?{urllib.parse.urlencode(query)}"
     req = urllib.request.Request(
         url,
         headers={
@@ -319,44 +359,87 @@ def fetch_page(page: int) -> dict:
     raise RuntimeError("Oväntat fall i fetch_page")
 
 
-def fetch_assortment() -> list[dict]:
-    """Paginera igenom hela sortimentet. Tar ca 3–5 minuter."""
-    print(f"Hämtar sortiment från Systembolagets API…", flush=True)
-    all_products: list[dict] = []
+def fetch_pass(params: dict) -> tuple[list[dict], int]:
+    """Bläddra igenom alla sidor för EN sökning. Returnerar (produkter, docCount)."""
+    products_out: list[dict] = []
+    doc_count = 0
     page = 1
-    start_time = time.time()
-
     while page <= MAX_PAGES:
-        result = fetch_page(page)
+        result = fetch_page(page, params)
         products = result.get("products") or []
+        metadata = result.get("metadata") or {}
+        doc_count = metadata.get("docCount") or doc_count
         if not products:
             break
-        all_products.extend(products)
-
-        metadata = result.get("metadata") or {}
-        total_pages = metadata.get("nextPage")
-        doc_count = metadata.get("docCount")
-
-        # Logga progress var 50:e sida för att inte spamma loggen
-        if page == 1 or page % 50 == 0:
-            elapsed = time.time() - start_time
-            if doc_count:
-                pct = len(all_products) / doc_count * 100
-                print(f"  Sida {page}: {len(all_products):,}/{doc_count:,} produkter ({pct:.0f}%, {elapsed:.0f}s)", flush=True)
-            else:
-                print(f"  Sida {page}: {len(all_products):,} produkter ({elapsed:.0f}s)", flush=True)
-
-        # Slut på sidor?
-        if total_pages is None or total_pages <= page:
+        products_out.extend(products)
+        next_page = metadata.get("nextPage")
+        if next_page is None or next_page <= page:
             break
         page += 1
+        time.sleep(0.05)  # Snäll mot servern
+    return products_out, doc_count
 
-        # Snäll mot servern – kort paus mellan sidor
-        time.sleep(0.05)
 
+def fetch_complete(params: dict) -> tuple[dict, int]:
+    """Hämta ALLA träffar för en sökning, med fast sortering.
+
+    Bläddrar igenom sökningen med första sorteringsordningen i SORT_PASSES och
+    räknar unika produktnummer. Saknas något (API:et kan ge samma produkt på
+    två sidor när flera har samma sorteringsvärde, och då faller en annan
+    bort) görs ett nytt varv med nästa ordning, tills allt är med.
+
+    Har sökningen fler träffar än API:et lämnar ut (9 990) delas den upp per
+    huvudkategori. Returnerar (produkter per produktnummer, docCount).
+    """
+    _, first_count = fetch_pass_meta(params)
+    if first_count > MAX_RESULTS_PER_QUERY and "categoryLevel1" not in params:
+        print(f"  {first_count:,} träffar är fler än API:et lämnar ut – delar upp per kategori.", flush=True)
+        merged: dict = {}
+        total = 0
+        for cat in sorted(KEEP_CATEGORIES):
+            part, count = fetch_complete({**params, "categoryLevel1": cat})
+            merged.update(part)
+            total += count
+        return merged, total
+
+    found: dict = {}
+    doc_count = first_count
+    for sort_by, direction in SORT_PASSES:
+        products, doc_count = fetch_pass({**params, "sortBy": sort_by, "sortDirection": direction})
+        before = len(found)
+        for p in products:
+            pn = p.get("productNumber")
+            if pn and str(pn) not in found:
+                found[str(pn)] = p
+        print(f"  {params} sorterat på {sort_by} {direction}: {len(products):,} rader, "
+              f"{len(found) - before:,} nya → {len(found):,}/{doc_count:,} unika", flush=True)
+        if len(found) >= doc_count:
+            break
+    return found, doc_count
+
+
+def fetch_pass_meta(params: dict) -> tuple[dict, int]:
+    """Första sidan av en sökning – för att se hur många träffar den har."""
+    result = fetch_page(1, params)
+    return result, (result.get("metadata") or {}).get("docCount") or 0
+
+
+def fetch_assortment() -> tuple[list[dict], int]:
+    """Hämta alla produkter i ASSORTMENTS. Tar någon minut.
+
+    Returnerar (produkter, summan av API:ets docCount) så att main() kan
+    kontrollera att vi verkligen fått med allt."""
+    print(f"Hämtar {', '.join(ASSORTMENTS)} från Systembolagets API…", flush=True)
+    start_time = time.time()
+    all_found: dict = {}
+    expected = 0
+    for assortment in ASSORTMENTS:
+        found, count = fetch_complete({"assortmentText": assortment})
+        all_found.update(found)
+        expected += count
     elapsed = time.time() - start_time
-    print(f"Klart: {len(all_products):,} produkter på {page} sidor ({elapsed:.0f}s)", flush=True)
-    return all_products
+    print(f"Klart: {len(all_found):,} unika produkter av {expected:,} enligt API:et ({elapsed:.0f}s)", flush=True)
+    return list(all_found.values()), expected
 
 
 def format_price(price) -> str:
@@ -564,20 +647,98 @@ def touch_sitemap_lastmod() -> None:
         count=1,
         flags=re.S,
     )
-    if n:
+    # /prisandringar visar "senast kollat" och nya prisändringar – ändras också varje körning.
+    new_xml, n2 = re.subn(
+        r"<url>\s*<loc>https://apkguiden\.se/prisandringar</loc>.*?</url>",
+        bump,
+        new_xml,
+        count=1,
+        flags=re.S,
+    )
+    if n or n2:
         SITEMAP_PATH.write_text(new_xml, encoding="utf-8")
-        print(f"Uppdaterade sitemap.xml: startsidans <lastmod> satt till {today}.", flush=True)
-    else:
+        print(f"Uppdaterade sitemap.xml: <lastmod> för startsidan och /prisandringar satt till {today}.", flush=True)
+    if not n:
         print("VARNING: hittade inte startsidans <url>-block i sitemap.xml.", file=sys.stderr)
 
 
+def days_between(a: str, b: str) -> int:
+    """Antal dagar från datum a till datum b (ÅÅÅÅ-MM-DD)."""
+    return (date.fromisoformat(b) - date.fromisoformat(a)).days
+
+
+def load_price_history() -> dict:
+    """Läs price-history.json. Format:
+        {"since": första kontrolldatum, "checks": [alla kontrolldatum],
+         "assortments": [urvalet historiken gäller],
+         "products": {id: {"p": [[datum, pris], ...], "s": senast sedd}}}
+    "p" har en rad för första gången vi såg drycken och sedan en rad per
+    prisändring (datumet = den körning då nya priset upptäcktes)."""
+    if not PRICE_HISTORY_PATH.exists():
+        return {"since": None, "checks": [], "products": {}}
+    try:
+        return json.loads(PRICE_HISTORY_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        print(f"VARNING: kunde inte läsa {PRICE_HISTORY_PATH.name} ({e}); börjar om.", file=sys.stderr)
+        return {"since": None, "checks": [], "products": {}}
+
+
+def update_price_history(history: dict, observed: list[dict], keep_ids: set, today: str) -> dict:
+    """Lägg till dagens priser för drycker vi faktiskt såg i API:et (inte de
+    som bara ligger kvar under GRACE_DAYS) och rensa bort gammalt."""
+    products = history.setdefault("products", {})
+    for p in observed:
+        pid, price = str(p.get("id") or ""), p.get("price")
+        if not pid or not price:
+            continue
+        price = int(price) if float(price).is_integer() else round(float(price), 2)
+        entry = products.get(pid)
+        if entry is None:
+            products[pid] = {"p": [[today, price]], "s": today}
+            continue
+        if entry["p"][-1][1] != price:
+            if entry["p"][-1][0] == today:  # två körningar samma dag
+                entry["p"][-1][1] = price
+            else:
+                entry["p"].append([today, price])
+        entry["s"] = today
+
+    if history.get("assortments") != ASSORTMENTS:
+        # Urvalet har ändrats (eller historiken byggdes innan urvalet sparades):
+        # behåll bara drycker som finns på sajten nu.
+        history["products"] = {k: v for k, v in products.items() if k in keep_ids}
+        history["assortments"] = ASSORTMENTS
+    else:
+        history["products"] = {k: v for k, v in products.items()
+                               if k in keep_ids or days_between(v.get("s") or today, today) <= HISTORY_KEEP_DAYS}
+
+    checks = history.setdefault("checks", [])
+    if not checks or checks[-1] != today:
+        checks.append(today)
+    history["since"] = history.get("since") or checks[0]
+    history["products"] = dict(sorted(history["products"].items()))
+    return history
+
+
+def write_price_history(history: dict) -> None:
+    PRICE_HISTORY_PATH.write_text(
+        json.dumps(history, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    changed = sum(1 for v in history["products"].values() if len(v.get("p", [])) > 1)
+    print(f"Skrev prishistorik för {len(history['products']):,} drycker "
+          f"({changed:,} med minst en prisändring) till {PRICE_HISTORY_PATH.name} "
+          f"({PRICE_HISTORY_PATH.stat().st_size / 1024:.0f} KB)", flush=True)
+
+
 def main() -> int:
-    # Läs förra körningens id INNAN vi skriver över filerna, så vi kan
-    # markera nyinkomna produkter.
-    prev_ids = load_previous_ids()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    # Läs förra körningen INNAN vi skriver över filerna, så vi kan markera
+    # nyinkomna produkter och låta tillfälligt saknade ligga kvar.
+    prev_by_id, same_selection = load_previous()
+    history = load_price_history()
 
     try:
-        assortment = fetch_assortment()
+        assortment, expected = fetch_assortment()
     except Exception as e:
         print(f"FEL: kunde inte hämta sortimentet: {e}", file=sys.stderr)
         return 1
@@ -586,10 +747,11 @@ def main() -> int:
 
     # Säkerhetscheck: om vi får tillbaka misstänkt få produkter har något
     # gått fel (t.ex. API är nere, format ändrat). Avsluta hellre med fel
-    # än att överskriva en bra data.json med tom data.
-    if len(assortment) < 5000:
+    # än att överskriva en bra data.json med halv data.
+    if len(assortment) < MIN_PRODUCTS or len(assortment) < expected * MIN_COVERAGE:
         print(
-            f"FEL: Bara {len(assortment)} produkter hämtade, väntade ≥5 000. "
+            f"FEL: Bara {len(assortment):,} produkter hämtade av {expected:,} enligt API:et "
+            f"(minst {MIN_COVERAGE:.0%} och {MIN_PRODUCTS:,} krävs). "
             "Avbryter för att inte skriva över bra data.",
             file=sys.stderr,
         )
@@ -623,6 +785,25 @@ def main() -> int:
     transformed = deduped
     print(f"Dubbletter borttagna (samma produktnummer): {dup_count:,}", flush=True)
 
+    # ===== Låt tillfälligt saknade drycker ligga kvar =====
+    # En dryck som fanns förra veckan men saknas nu (t.ex. helt slut i lager)
+    # ligger kvar med senast kända uppgifter i upp till GRACE_DAYS, så att dess
+    # sida inte blinkar mellan 404 och 200. "seen" = senast vi såg den i API:et.
+    observed_ids = {str(p["id"]) for p in transformed if p.get("id")}
+    hist_products = history.get("products", {})
+    carried = []
+    if same_selection:
+        for pid, old in prev_by_id.items():
+            if pid in observed_ids:
+                continue
+            last_seen = (hist_products.get(pid) or {}).get("s") or old.get("seen")
+            if last_seen and days_between(last_seen, today) <= GRACE_DAYS:
+                keep = {k: v for k, v in old.items() if k not in ("rank", "categoryTotal", "new", "index")}
+                keep["seen"] = last_seen
+                carried.append(keep)
+    transformed.extend(carried)
+    print(f"Saknas denna vecka men ligger kvar (≤ {GRACE_DAYS} dagar): {len(carried):,}", flush=True)
+
     # ===== Ta bort "look-alike"-dubbletter (samma namn + producent + volym) =====
     # Olika artikelnummer men identiska för besökaren. Se dedupe_lookalikes().
     transformed, lookalike_count = dedupe_lookalikes(transformed)
@@ -632,11 +813,12 @@ def main() -> int:
     # En produkt vars id inte fanns i förra körningens search-data.json räknas
     # som nyinkommen. Vi sätter "new": True endast på de nya produkterna (övriga
     # lämnas utan fältet för att hålla filstorleken nere). Badgen försvinner
-    # automatiskt vid nästa körning, eftersom id:t då finns i prev_ids.
+    # automatiskt vid nästa körning. Har urvalet ändrats sedan förra körningen
+    # markeras inget (allt vore ju "nytt").
     new_count = 0
-    if prev_ids:
+    if prev_by_id and same_selection:
         for p in transformed:
-            if p["id"] and str(p["id"]) not in prev_ids:
+            if p["id"] and str(p["id"]) not in prev_by_id:
                 p["new"] = True
                 new_count += 1
     print(f"Nyinkomna sedan förra körningen: {new_count:,}", flush=True)
@@ -672,6 +854,7 @@ def main() -> int:
         "updated": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "count": len(search_full),
         "source": "https://github.com/AlexGustafsson/systembolaget-api-data",
+        "assortments": ASSORTMENTS,
         "products": search_full,
     }
     SEARCH_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -733,10 +916,25 @@ def main() -> int:
             d = extract_details(raw)
             if d:
                 details[pid] = d
+    # Drycker som bara ligger kvar (se GRACE_DAYS) finns inte i dagens svar från
+    # API:et – behåll deras beskrivningsfakta från förra körningen.
+    if DETAILS_OUTPUT_PATH.exists():
+        try:
+            prev_details = json.loads(DETAILS_OUTPUT_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            prev_details = {}
+        for pid in keep_ids:
+            if pid not in details and pid in prev_details:
+                details[pid] = prev_details[pid]
     with DETAILS_OUTPUT_PATH.open("w", encoding="utf-8") as f:
         json.dump(details, f, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     print(f"Skrev beskrivningsfakta för {len(details):,} produkter till {DETAILS_OUTPUT_PATH.name} "
           f"({DETAILS_OUTPUT_PATH.stat().st_size / 1024:.0f} KB)", flush=True)
+
+    # ===== 5) Prishistorik (dryckessidorna + /prisandringar) =====
+    observed = [p for p in search_full if "seen" not in p]
+    history = update_price_history(history, observed, keep_ids, today)
+    write_price_history(history)
 
     return 0
 
