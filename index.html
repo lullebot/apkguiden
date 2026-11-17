@@ -439,6 +439,7 @@
       font-weight: 700;
     }
     .tab svg { width: 15px; height: 15px; flex-shrink: 0; }
+    a.tab-link { text-decoration: none; }
 
     /* Subtabs – underkategori-chips som dyker upp när man valt en huvudkategori */
     .subtabs {
@@ -1661,6 +1662,9 @@
       { key: 'Sprit', label: 'Sprit', icon: 'droplets' },
       // Systembolagets "Cider & blanddrycker": cider + blanddrycker (t.ex. sours).
       { key: 'Cider', label: 'Cider', icon: 'apple', allLabel: 'Cider & blanddryck' },
+      // Skämt: ser ut som en kategori men är en länk till 1177:s sida om att
+      // ändra sina alkoholvanor (öppnas i ny flik). Har ingen lista.
+      { key: 'Alkoholfritt', label: 'Alkoholfritt', icon: 'glass', href: 'https://www.1177.se/liv--halsa/tobak-och-alkohol/alkohol/sa-kan-du-andra-dina-alkoholvanor/' },
     ];
 
     // Sub-kategorier per huvudkategori. Matchar Systembolagets categoryLevel2,
@@ -1700,7 +1704,7 @@
     function readCategoryFromUrl() {
       try {
         const q = new URLSearchParams(location.search);
-        const cat = CATEGORIES.find(c => c.key !== 'Alla' && urlSlug(c.key) === urlSlug(q.get('kategori')));
+        const cat = CATEGORIES.find(c => c.key !== 'Alla' && !c.href && urlSlug(c.key) === urlSlug(q.get('kategori')));
         if (!cat) return false;
         selectedCategory = cat.key;
         const sub = (SUBCATEGORIES[cat.key] || []).find(x => urlSlug(x) === urlSlug(q.get('typ')));
@@ -2034,13 +2038,18 @@
 
     function renderTabs() {
       const tabsEl = document.getElementById('tabs');
-      tabsEl.innerHTML = CATEGORIES.map(cat => `
+      tabsEl.innerHTML = CATEGORIES.map(cat => cat.href ? `
+        <a class="tab tab-link" href="${cat.href}" target="_blank" rel="noopener" aria-label="${cat.label} (öppnar 1177.se i en ny flik)">
+          ${ICONS[cat.icon]}
+          <span>${cat.label}</span>
+        </a>
+      ` : `
         <button class="tab ${cat.key === selectedCategory ? 'active' : ''}" data-cat="${cat.key}">
           ${ICONS[cat.icon]}
           <span>${cat.label}</span>
         </button>
       `).join('');
-      tabsEl.querySelectorAll('.tab').forEach(btn => {
+      tabsEl.querySelectorAll('button.tab').forEach(btn => {
         btn.addEventListener('click', () => {
           selectedCategory = btn.dataset.cat;
           selectedSubcategory = null; // Nollställ chip när man byter huvudkategori
