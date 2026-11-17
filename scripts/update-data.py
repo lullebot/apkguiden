@@ -22,6 +22,7 @@ Hela paginerings-cykeln tar ca 3–5 minuter. Det är fine i en nattlig
 GitHub Action men vill man köra lokalt: ha tålamod.
 """
 
+import hashlib
 import html
 import json
 import re
@@ -671,9 +672,12 @@ def load_price_history() -> dict:
     """Läs price-history.json. Format:
         {"since": första kontrolldatum, "checks": [alla kontrolldatum],
          "assortments": [urvalet historiken gäller],
-         "products": {id: {"p": [[datum, pris], ...], "s": senast sedd}}}
+         "products": {id: {"p": [[datum, pris], ...], "s": senast sedd,
+                           "k": signatur för namn + volym, se identity_key()}}}
     "p" har en rad för första gången vi såg drycken och sedan en rad per
-    prisändring (datumet = den körning då nya priset upptäcktes)."""
+    prisändring (datumet = den körning då nya priset upptäcktes). En tredje
+    siffra 1 betyder att datumet är osäkert (drycken saknades veckorna före).
+    Historiken maj–nov 2026 är återskapad ur repots git-historik."""
     if not PRICE_HISTORY_PATH.exists():
         return {"since": None, "checks": [], "products": {}}
     try:
@@ -681,6 +685,17 @@ def load_price_history() -> dict:
     except (OSError, ValueError) as e:
         print(f"VARNING: kunde inte läsa {PRICE_HISTORY_PATH.name} ({e}); börjar om.", file=sys.stderr)
         return {"since": None, "checks": [], "products": {}}
+
+
+def identity_key(p: dict) -> str:
+    """Kort signatur för namn + volym. Systembolaget återanvänder ibland ett
+    artikelnummer för en helt annan dryck (t.ex. 9027801: först Chapelle de
+    Potensac för 249 kr, sedan Fonseca Vintage för 949 kr). Ändras signaturen
+    börjar historiken om, annars skulle det se ut som en prisändring."""
+    name = re.sub(r"\s+", " ", str(p.get("name") or "").strip().lower())
+    vol = p.get("volume") or 0
+    vol = int(vol) if float(vol).is_integer() else vol
+    return hashlib.md5(f"{name}|{vol}".encode("utf-8")).hexdigest()[:8]
 
 
 def update_price_history(history: dict, observed: list[dict], keep_ids: set, today: str) -> dict:
@@ -692,13 +707,20 @@ def update_price_history(history: dict, observed: list[dict], keep_ids: set, tod
         if not pid or not price:
             continue
         price = int(price) if float(price).is_integer() else round(float(price), 2)
+        key = identity_key(p)
         entry = products.get(pid)
-        if entry is None:
-            products[pid] = {"p": [[today, price]], "s": today}
+        if entry is None or (entry.get("k") and entry["k"] != key):
+            products[pid] = {"p": [[today, price]], "s": today, "k": key}
             continue
+        entry["k"] = key
         if entry["p"][-1][1] != price:
             if entry["p"][-1][0] == today:  # två körningar samma dag
                 entry["p"][-1][1] = price
+            elif days_between(entry.get("s") or today, today) > 8:
+                # Drycken har saknats några veckor – vi vet inte när priset
+                # ändrades. Flagga 1 = datum osäkert (räknas inte in i
+                # prisomgångarna på /prisandringar, men visas på dryckessidan).
+                entry["p"].append([today, price, 1])
             else:
                 entry["p"].append([today, price])
         entry["s"] = today

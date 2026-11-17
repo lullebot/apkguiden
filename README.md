@@ -90,19 +90,33 @@ När du har köpt domänen (ca 100 kr/år hos t.ex. Loopia, One.com eller Namech
 ### Datapipeline
 
 ```
-Systembolaget.se
-    ↓ (skrapas dagligen)
-GitHub: AlexGustafsson/systembolaget-api-data
-    ↓ (laddas ner av vår bot varje natt)
-Ditt repo: scripts/update-data.py kör → data.json uppdateras
-    ↓ (Vercel ser att data.json ändrats)
+Systembolagets sök-API (samma som systembolaget.se använder)
+    ↓ (hämtas varje måndag av GitHub Actions: scripts/update-data.py)
+Ditt repo: data.json, search-data.json, price-history.json m.fl. uppdateras
+    ↓ (Vercel ser att filerna ändrats och deployar)
 apkguiden.se → laddar färsk data
 ```
+
+**Bara fasta sortimentet, och allt av det.** Skriptet söker bara i `ASSORTMENTS` (i dag `["Fast sortiment"]`, ca 3 200 artiklar). API:et lämnar aldrig ut mer än 9 990 träffar per sökning, och sorteringen är inte stabil – därför bläddras sökningen igenom med flera sorteringsordningar (`SORT_PASSES`) tills alla unika produkter är med. Loggen visar t.ex. `3 159/3 159 unika`. Får skriptet med mindre än 95 % (`MIN_COVERAGE`) avbryts körningen hellre än att skriva över bra data.
+
+*Bakgrund:* fram till nov 2026 hämtades hela katalogen (~27 800) i en sökning, men bara de första 9 990 kom med – i en ordning som skiftade varje vecka. Följden var att 1 000–1 600 drycker försvann och kom tillbaka varje vecka, och deras sidor gav 404 under tiden.
+
+**Tillfälligt saknade drycker ligger kvar.** Saknas en dryck en vecka (t.ex. helt slut i lager) ligger den kvar med senast kända uppgifter i upp till 21 dagar (`GRACE_DAYS`), så att sidan inte blinkar mellan 404 och 200. Dryckessidan säger då "senast sedd …".
+
+### Prishistorik och /prisandringar
+
+`price-history.json` har en rad per dryck och prisändring: första gången vi såg drycken och varje nytt pris därefter (datum = den veckokörning då ändringen upptäcktes). Den uppdateras varje vecka av `update-data.py`. Historiken maj–nov 2026 återskapades ur repots git-historik (veckovisa `search-data.json`).
+
+- Varje dryckessida (`api/dryck.js`) visar dryckens prishistorik med en liten graf.
+- `/prisandringar` (`api/prisandringar.js`) visar senaste prisomgången (en månad med minst 25 ändringar): antal dyrare/billigare, per kategori, största höjningarna och sänkningarna och hela listan. Sidan uppdaterar sig själv efter varje veckokörning.
+- Systembolaget återanvänder ibland ett artikelnummer för en helt annan dryck. Byter namn eller volym för ett nummer börjar historiken om, så det inte ser ut som en prisändring.
+- Ändringar som upptäcks efter att en dryck saknats några veckor har osäkert datum och räknas inte in i prisomgångarna.
 
 ### Justera vilka produkter som visas
 
 Öppna `scripts/update-data.py`. Justera:
 
+- `ASSORTMENTS = ["Fast sortiment"]` – vilka av Systembolagets sortiment som visas. Lägg till t.ex. `"Tillfälligt sortiment"` för fler drycker.
 - `TOP_PER_CATEGORY = 500` – hur många produkter per huvudkategori som behålls.
 - `MIN_ALCOHOL_PERCENT = 1.0` – lägsta alkoholhalt (filtrerar bort 0%-produkter).
 - `KEEP_CATEGORIES = {...}` – vilka huvudkategorier som tas med.
@@ -128,7 +142,7 @@ Varför: Google nedgraderade hela sajten 30 okt 2026, troligen för att ~7 300 n
 
 ## 🤖 Underhåll
 
-- Den schemalagda Action-körningen sker varje dygn 06:00 UTC (08:00 svensk sommartid, 07:00 vintertid).
+- Den schemalagda Action-körningen sker varje måndag 06:00 UTC (08:00 svensk sommartid, 07:00 vintertid).
 - Om datan inte uppdateras: gå till fliken **Actions** i GitHub och kontrollera om något jobb misslyckats.
 - Om GitHub-källan slutar uppdateras (osannolikt) finns alternativa speglar att byta till – se `update-data.py`.
 

@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/dryck/:slug", "destination": "/api/dryck?slug=:slug" }
+    { "source": "/dryck/:slug", "destination": "/api/dryck?slug=:slug" },
+    { "source": "/prisandringar", "destination": "/api/prisandringar" }
   ]
 }
