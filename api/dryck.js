@@ -76,6 +76,7 @@ const HOME_SUBCATEGORIES = {
   'Vin': ['Rött vin', 'Vitt vin', 'Rosévin', 'Mousserande vin', 'Starkvin', 'Smaksatt vin & fruktvin', 'Glögg och Glühwein'],
   'Öl': ['Ale', 'Ljus lager', 'Mellanmörk & Mörk lager', 'Veteöl', 'Porter & Stout', 'Syrlig öl', 'Annan öl'],
   'Sprit': ['Whisky', 'Gin & Genever', 'Rom & Lagrad sockerrörssprit', 'Likör', 'Armagnac & Brandy', 'Akvavit & Kryddat brännvin', 'Grappa & Marc', 'Smaksatt sprit'],
+  'Cider': ['Cider', 'Blanddryck'],
 };
 function urlSlug(s) {
   return String(s || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -278,6 +279,14 @@ function productDescription(p) {
     // "Smaksatt vin & fruktvin" + stilen "Mjöd" → "är mjöd"
     else if (isGroup(sub)) lead = style ? `är ${style}` : `hör till kategorin ${s}`;
     else lead = `är ${s}${style ? ' i stilen ' + style : ''}`;
+  }
+  else if (p.category === 'Cider') {
+    // Stilen är ett adjektiv ("Söt", "Torr") – "är en söt cider".
+    const s = lower(sub);
+    const style = lower(d.s);
+    if (!style) lead = `är ${s}`;
+    else if (/^[a-zåäö]+$/.test(style)) lead = `är en ${style} ${s}`;
+    else lead = `är ${s} i stilen ${style}`;
   }
   else if (d.s && !isGroup(d.s)) lead = `är ${styleText(d.s)}`;
   else if (!d.s && !isGroup(sub)) lead = `är ${lower(sub)}`;

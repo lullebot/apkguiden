@@ -119,7 +119,7 @@ apkguiden.se → laddar färsk data
 - `ASSORTMENTS = ["Fast sortiment"]` – vilka av Systembolagets sortiment som visas. Lägg till t.ex. `"Tillfälligt sortiment"` för fler drycker.
 - `TOP_PER_CATEGORY = 500` – hur många produkter per huvudkategori som behålls.
 - `MIN_ALCOHOL_PERCENT = 1.0` – lägsta alkoholhalt (filtrerar bort 0%-produkter).
-- `KEEP_CATEGORIES = {...}` – vilka huvudkategorier som tas med.
+- `KEEP_CATEGORIES = {...}` – vilka huvudkategorier som tas med, stavade som i Systembolagets data (`"Cider & blanddrycker"` med litet b – med stort B föll alla ciders bort fram till nov 2026). `CATEGORY_MAP` ger dem kortare namn på sajten (`Cider`). En ny kategori behöver också läggas till i `CATEGORIES`/`SUBCATEGORIES` i `index.html`, `HOME_SUBCATEGORIES` i `api/dryck.js` och `CATEGORIES` i `samst-apk.html`.
 
 Spara filen, committa till GitHub, och kör Action-workflowen igen för att se ändringen.
 

@@ -183,6 +183,26 @@
     }
     .logo-tld { color: var(--yellow-muted); }
 
+    /* Knapp till /prisandringar uppe till höger (samma stil som
+       "← Hela topplistan" på dryckessidorna). */
+    .nav-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-shrink: 0;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--cream);
+      text-decoration: none;
+      padding: 0.5rem 0.875rem;
+      border-radius: 9999px;
+      border: 1.5px solid rgba(244, 211, 94, 0.25);
+      white-space: nowrap;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .nav-pill:hover { border-color: var(--yellow); color: var(--yellow); }
+    .nav-pill svg { width: 0.95rem; height: 0.95rem; }
+
     .live-indicator {
       display: none;
       align-items: center;
@@ -1102,7 +1122,10 @@
       gap: 0.875rem;
     }
     @media (min-width: 768px) {
-      .mini-cards { grid-template-columns: repeat(3, 1fr); }
+      .mini-cards { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 1100px) {
+      .mini-cards { grid-template-columns: repeat(4, 1fr); }
     }
     .mini-card {
       position: relative;
@@ -1380,6 +1403,10 @@
           <span id="liveText">Laddar data…</span>
         </div>
       </div>
+      <a href="/prisandringar" class="nav-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 16-4 4-4-4"></path><path d="M17 20V4"></path><path d="m3 8 4-4 4 4"></path><path d="M7 4v16"></path></svg>
+        Prisändringar
+      </a>
     </div>
   </header>
 
@@ -1409,6 +1436,9 @@
     <div class="mini-cards-eyebrow">Snabbkoll – bäst i varje kategori</div>
     <div class="mini-cards" id="miniCards"></div>
   </section>
+
+  <!-- Osynligt ankare där flik-raden börjar – se scrollToListTop() -->
+  <div id="listAnchor" aria-hidden="true"></div>
 
   <!-- TABS (sticky) -->
   <nav class="tabs-wrap">
@@ -1603,6 +1633,7 @@
       droplets: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"></path><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"></path></svg>',
       sparkles: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg>',
       glass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 22H8.8a2 2 0 0 1-2-1.79L5 3h14l-1.81 17.21A2 2 0 0 1 15.2 22Z"></path><path d="M6 12a5 5 0 0 1 6 0 5 5 0 0 0 6 0"></path></svg>',
+      apple: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"></path><path d="M10 2c1 .5 2 2 2 5"></path></svg>',
     };
 
     const CATEGORIES = [
@@ -1610,6 +1641,8 @@
       { key: 'Vin', label: 'Vin', icon: 'wine' },
       { key: 'Öl', label: 'Öl', icon: 'beer' },
       { key: 'Sprit', label: 'Sprit', icon: 'droplets' },
+      // Systembolagets "Cider & blanddrycker": cider + blanddrycker (t.ex. sours).
+      { key: 'Cider', label: 'Cider', icon: 'apple', allLabel: 'Cider & blanddryck' },
     ];
 
     // Sub-kategorier per huvudkategori. Matchar Systembolagets categoryLevel2,
@@ -1618,6 +1651,7 @@
       'Vin': ['Rött vin', 'Vitt vin', 'Rosévin', 'Mousserande vin', 'Starkvin', 'Vinbox', 'Smaksatt vin & fruktvin', 'Glögg och Glühwein'],
       'Öl': ['Ale', 'Ljus lager', 'Mellanmörk & Mörk lager', 'Veteöl', 'Porter & Stout', 'Syrlig öl', 'Annan öl'],
       'Sprit': ['Whisky', 'Gin & Genever', 'Rom & Lagrad sockerrörssprit', 'Likör', 'Armagnac & Brandy', 'Akvavit & Kryddat brännvin', 'Grappa & Marc', 'Smaksatt sprit'],
+      'Cider': ['Cider', 'Blanddryck'],
     };
 
     // Specialfilter: vissa "subkategori"-chips matchar något annat fält än
@@ -1682,6 +1716,7 @@
       { key: 'Vin', icon: 'wine' },
       { key: 'Öl', icon: 'beer' },
       { key: 'Sprit', icon: 'droplets' },
+      { key: 'Cider', icon: 'apple' },
     ];
 
     // Söktillstånd – search-data.json laddas lazy vid första sökningen
@@ -1717,8 +1752,7 @@
         render();
         if (cameFromLink) {
           // Hoppa direkt till listan när man kommer från en dryckessida
-          const tabsWrap = document.querySelector('.tabs-wrap');
-          if (tabsWrap) window.scrollTo({ top: tabsWrap.offsetTop - 1 });
+          scrollToListTop(false);
         }
 
         // Förladda hela sortimentet i bakgrunden för söket. När det är klart
@@ -1967,6 +2001,19 @@
     // ============================================
     // KATEGORI-TABBAR + UNDERKATEGORI-CHIPS
     // ============================================
+
+    // Scrolla till toppen av topplistan (flik-raden överst i fönstret).
+    // .tabs-wrap är position: sticky – när den sitter fast i toppen är dess
+    // offsetTop samma som där man råkar vara scrollad, så att scrolla dit
+    // gjorde ingenting. Därför mäter vi från #listAnchor, som ligger precis
+    // före flik-raden och aldrig flyttar sig.
+    function scrollToListTop(smooth = true) {
+      const anchor = document.getElementById('listAnchor');
+      if (!anchor) return;
+      const top = anchor.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' });
+    }
+
     function renderTabs() {
       const tabsEl = document.getElementById('tabs');
       tabsEl.innerHTML = CATEGORIES.map(cat => `
@@ -1982,7 +2029,7 @@
           writeCategoryToUrl();
           renderTabs();
           render();
-          window.scrollTo({ top: document.querySelector('.tabs-wrap').offsetTop - 1, behavior: 'smooth' });
+          scrollToListTop();
         });
       });
       renderSubtabs();
@@ -1998,7 +2045,7 @@
       }
       subEl.hidden = false;
       const chips = [
-        { key: null, label: `Allt ${selectedCategory.toLowerCase()}` },
+        { key: null, label: (CATEGORIES.find(c => c.key === selectedCategory) || {}).allLabel || `Allt ${selectedCategory.toLowerCase()}` },
         ...subs.map(s => ({ key: s, label: s })),
       ];
       subEl.innerHTML = chips.map(c => `
@@ -2012,6 +2059,7 @@
           writeCategoryToUrl();
           renderSubtabs();
           render();
+          scrollToListTop();
         });
       });
     }
@@ -2091,7 +2139,7 @@
           selectedSubcategory = null;
           renderTabs();
           render();
-          window.scrollTo({ top: document.querySelector('.tabs-wrap').offsetTop - 1, behavior: 'smooth' });
+          scrollToListTop();
         });
       });
     }
