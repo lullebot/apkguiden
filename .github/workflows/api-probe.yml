@@ -5,10 +5,30 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: claude/cider-scroll-prisknapp
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -u scripts/_api_probe.py
+      - name: Kör skrapan med cider
+        run: python -u scripts/update-data.py
+      - name: Sammanfattning
+        run: |
+          python -u - <<'PY'
+          import json, collections
+          d = json.load(open('search-data.json'))
+          print('== count', d['count'], collections.Counter(p['category'] for p in d['products']))
+          c = [p for p in d['products'] if p['category'] == 'Cider']
+          print('== cider sub', collections.Counter(p['subcategory'] for p in c), 'new', sum(1 for p in d['products'] if p.get('new')), 'index cider', sum(1 for p in c if p.get('index')))
+          det = json.load(open('product-details.json'))
+          print('== cider styles', collections.Counter((det.get(p['id']) or {}).get('s') for p in c).most_common())
+          for p in c[:8]: print('== top', p['name'], p['subcategory'], p['volume'], p['alcohol'], p['price'], p['apk'], (det.get(p['id']) or {}).get('s'))
+          dd = json.load(open('data.json'))
+          print('== data.json cider', sum(1 for p in dd['products'] if p['category'] == 'Cider'))
+          h = json.load(open('price-history.json'))
+          print('== history', len(h['products']), 'checks', h['checks'][-3:])
+          PY
+          grep -o "Cider[^<]\{0,80\}" index.html | head -3
