@@ -2430,13 +2430,21 @@
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
     }
+    // Dagnummer i svensk tid. "idag/igår" räknas i kalenderdagar, inte i
+    // 24-timmarsperioder: data från igår eftermiddag ska stå som "igår" även
+    // om det gått mindre än ett dygn.
+    function swedishDayNumber(d) {
+      const p = {};
+      for (const part of new Intl.DateTimeFormat('sv-SE', {
+        timeZone: 'Europe/Stockholm', year: 'numeric', month: 'numeric', day: 'numeric'
+      }).formatToParts(d)) p[part.type] = part.value;
+      return Date.UTC(+p.year, +p.month - 1, +p.day) / 86400000;
+    }
     function updateLiveIndicator() {
       const txt = document.getElementById('liveText');
       if (dataMeta.updated) {
-        const date = new Date(dataMeta.updated);
-        const today = new Date();
-        const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
-        if (diffDays === 0) txt.textContent = 'Uppdaterad idag';
+        const diffDays = swedishDayNumber(new Date()) - swedishDayNumber(new Date(dataMeta.updated));
+        if (diffDays <= 0) txt.textContent = 'Uppdaterad idag';
         else if (diffDays === 1) txt.textContent = 'Uppdaterad igår';
         else txt.textContent = `Uppdaterad för ${diffDays} dagar sedan`;
       } else {
@@ -2450,6 +2458,33 @@
           date.toLocaleDateString('sv-SE', { day: '2-digit', month: 'long', year: 'numeric' });
       }
     }
+
+    // ============================================
+    // GAMMAL FLIK / HEMSKÄRMSAPP
+    // ============================================
+    // Sidan hämtar data.json bara när den laddas. En flik eller hemskärmsapp
+    // som legat öppen i flera dagar visar annars gammal data – och gammalt
+    // "Senast uppdaterat" (så hände 17 nov 2026: en flik från före 9 nov
+    // visade fortfarande "02 november"). När sidan blir synlig igen räknar vi
+    // om "Uppdaterad idag/igår" och kollar, högst var 30:e minut, om det finns
+    // nyare data. Finns det laddas sidan om.
+    let lastFreshCheck = Date.now();
+    async function checkForNewerData() {
+      if (document.visibilityState !== 'visible' || !dataMeta.updated) return;
+      updateLiveIndicator();
+      if (Date.now() - lastFreshCheck < 30 * 60 * 1000) return;
+      lastFreshCheck = Date.now();
+      try {
+        const response = await fetch('data.json', { cache: 'no-store' });
+        if (!response.ok) return;
+        const fresh = await response.json();
+        if (fresh.updated && Date.parse(fresh.updated) > Date.parse(dataMeta.updated)) {
+          location.reload();
+        }
+      } catch (err) { /* offline – vi försöker igen nästa gång */ }
+    }
+    document.addEventListener('visibilitychange', checkForNewerData);
+    window.addEventListener('pageshow', (e) => { if (e.persisted) checkForNewerData(); });
 
     // Starta!
     init();
