@@ -14,7 +14,7 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Checka ut repot
         uses: actions/checkout@v4
@@ -33,7 +33,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # index.html (statisk SEO-text + JSON-LD) och sitemap.xml (lastmod)
           # skrivs om av update-data.py och måste därför committas med.
-          git add data.json search-data.json index.html sitemap.xml sitemap-drycker.xml product-details.json
+          # price-history.json = prishistoriken (dryckessidorna + /prisandringar).
+          git add data.json search-data.json index.html sitemap.xml sitemap-drycker.xml product-details.json price-history.json
           if git diff --staged --quiet; then
             echo "Ingen förändring i datan – inget att committa."
           else

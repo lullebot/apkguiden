@@ -21,6 +21,17 @@ try {
   DETAILS = {};
 }
 
+// Prishistorik (skrivs av scripts/update-data.py varje vecka). Per dryck:
+// "p" = [[datum, pris], ...] – första gången vi såg drycken och sedan en rad
+// per prisändring – och "s" = senast sedd. Saknas filen visas ingen historik.
+let HISTORY = { checks: [], products: {} };
+try {
+  HISTORY = require('../price-history.json');
+} catch (e) {
+  HISTORY = { checks: [], products: {} };
+}
+const LAST_CHECK = (HISTORY.checks || [])[(HISTORY.checks || []).length - 1] || null;
+
 const SITE = 'https://apkguiden.se';
 const SIMILAR_EACH_SIDE = 3;
 
@@ -125,6 +136,35 @@ function standardDrinks(p) {
 }
 function systembolagetUrl(p) {
   return `https://www.systembolaget.se/sok?textQuery=${encodeURIComponent(p.id)}`;
+}
+const MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
+const MONTHS_SHORT = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+// "2026-09-07" → "7 sep 2026"
+function dateText(iso) {
+  const [y, m, d] = String(iso).split('-').map(Number);
+  return `${d} ${MONTHS_SHORT[m - 1]} ${y}`;
+}
+// "2026-09" eller "2026-09-07" → "september 2026"
+function monthText(iso) {
+  const [y, m] = String(iso).split('-').map(Number);
+  return `${MONTHS[m - 1]} ${y}`;
+}
+function pctText(pct) {
+  const r = Math.round(pct * 10) / 10;
+  return `${r > 0 ? '+' : r < 0 ? '−' : ''}${nf1.format(Math.abs(r))} %`;
+}
+// Prisändringarna för en dryck: [{date, from, to, pct, uncertain}] i
+// tidsordning. uncertain = drycken saknades i datan veckorna före, så exakt
+// när priset ändrades vet vi inte (tredje fältet i price-history.json).
+function priceChanges(id) {
+  const h = (HISTORY.products || {})[String(id)];
+  if (!h || !h.p || h.p.length < 2) return [];
+  const out = [];
+  for (let i = 1; i < h.p.length; i++) {
+    const from = h.p[i - 1][1], to = h.p[i][1];
+    out.push({ date: h.p[i][0], from, to, pct: (to / from - 1) * 100, uncertain: h.p[i][2] === 1 });
+  }
+  return out;
 }
 function lower(s) {
   return String(s || '').toLowerCase();
@@ -306,7 +346,67 @@ function comparison(p, subRank, subTotal, median) {
   return out.map((x) => `<li>${x}</li>`).join('');
 }
 
-function page({ title, metaDescription, canonical, jsonLd, body, noindex, ogImage }) {
+// ---------- Prishistorik på dryckessidan ----------
+// En liten trappstegsgraf (HTML + SVG, skalar med skärmbredden) plus samma
+// uppgifter som text – texten är "tabellvyn" för den som inte ser grafen.
+function priceChart(h, end) {
+  const pts = h.p;
+  const t0 = Date.parse(pts[0][0]);
+  const t1 = Date.parse(end);
+  if (!(t1 > t0)) return '';
+  const prices = pts.map((x) => x[1]);
+  const max = Math.max(...prices), min = Math.min(...prices);
+  const xPct = (d) => ((Date.parse(d) - t0) / (t1 - t0)) * 100;
+  const yPct = (v) => (max === min ? 50 : 14 + ((max - v) / (max - min)) * 72);
+  let path = `M0 ${yPct(pts[0][1]).toFixed(2)}`;
+  for (let i = 1; i < pts.length; i++) {
+    path += ` H${(xPct(pts[i][0]) * 10).toFixed(1)} V${yPct(pts[i][1]).toFixed(2)}`;
+  }
+  path += ' H1000';
+  const dots = pts.map((x, i) => {
+    const change = i > 0 ? ` (${pctText((x[1] / pts[i - 1][1] - 1) * 100)})` : '';
+    const label = `${i === 0 ? 'Första kollen' : 'Nytt pris'} ${dateText(x[0])}: ${kr(x[1])} kr${change}`;
+    return `<span class="ph-dot" style="left:${xPct(x[0]).toFixed(2)}%;top:${yPct(x[1]).toFixed(2)}%" title="${esc(label)}"></span>`;
+  }).join('');
+  const aria = 'Prishistorik: ' + pts.map((x) => `${kr(x[1])} kr från ${dateText(x[0])}`).join(', ') + '.';
+  return `<div class="ph" role="img" aria-label="${esc(aria)}">
+  <div class="ph-y" aria-hidden="true"><span style="top:${yPct(max).toFixed(2)}%">${kr(max)} kr</span>${min !== max ? `<span style="top:${yPct(min).toFixed(2)}%">${kr(min)} kr</span>` : ''}</div>
+  <div class="ph-plot"><div class="ph-area">
+    <svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
+      <line class="ph-grid" x1="0" x2="1000" y1="${yPct(max).toFixed(2)}" y2="${yPct(max).toFixed(2)}" vector-effect="non-scaling-stroke"/>
+      ${min !== max ? `<line class="ph-grid" x1="0" x2="1000" y1="${yPct(min).toFixed(2)}" y2="${yPct(min).toFixed(2)}" vector-effect="non-scaling-stroke"/>` : ''}
+      <path class="ph-line" d="${path}" vector-effect="non-scaling-stroke"/>
+    </svg>${dots}
+  </div></div>
+  <div class="ph-x" aria-hidden="true"><span>${esc(dateText(pts[0][0]))}</span><span>${esc(dateText(end))}</span></div>
+</div>`;
+}
+
+function priceHistorySection(p) {
+  const h = (HISTORY.products || {})[String(p.id)];
+  if (!h || !h.p || !h.p.length) return '';
+  const since = h.p[0][0];
+  const end = LAST_CHECK && LAST_CHECK > since ? LAST_CHECK : (h.s || since);
+  const changes = priceChanges(p.id);
+  let out = '<h2>Prishistorik</h2>';
+  if (p.seen) {
+    out += `<p class="prose ph-note">Drycken syntes inte i Systembolagets sortiment vid vår senaste koll (senast sedd ${esc(dateText(p.seen))}). Den kan vara tillfälligt slut – uppgifterna här är de senast kända.</p>`;
+  }
+  if (!changes.length) {
+    out += `<p class="prose">Priset har legat på <strong>${kr(h.p[0][1])} kr</strong> sedan vi började följa drycken ${esc(dateText(since))}. Vi kollar priset varje vecka och visar här om det ändras.</p>`;
+  } else {
+    out += priceChart(h, end);
+    const items = changes.slice().reverse().map((c) =>
+      `<li>${c.uncertain ? 'Senast ' : ''}${esc(dateText(c.date))}: ${c.to > c.from ? 'höjt' : 'sänkt'} från ${kr(c.from)} kr till <strong>${kr(c.to)} kr</strong> (${pctText(c.pct)}).</li>`
+    ).join('');
+    out += `<ul class="prose facts">${items}<li>${esc(dateText(since))}: ${kr(h.p[0][1])} kr när vi började följa drycken.</li></ul>`;
+    out += '<p class="prose ph-note">Datumet är den vecka vi upptäckte ändringen – vi kollar priset varje vecka.</p>';
+  }
+  out += '<p class="prose ph-more"><a href="/prisandringar">Alla prisändringar på Systembolaget →</a></p>';
+  return out;
+}
+
+function page({ title, metaDescription, canonical, jsonLd, body, noindex, ogImage, extraCss }) {
   return `<!DOCTYPE html>
 <html lang="sv">
 <head>
@@ -332,7 +432,7 @@ ${jsonLd ? jsonLd.map((j) => `<script type="application/ld+json">${JSON.stringif
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<style>${CSS}</style>
+<style>${CSS}${extraCss || ''}</style>
 </head>
 <body>
 <header class="top-nav"><div class="wrap nav-inner">
@@ -344,7 +444,7 @@ ${body}
 </main>
 <footer class="footer"><div class="wrap">
   <p>Data från Systembolagets fasta sortiment, uppdateras varje vecka. APK = volym (ml) × alkoholhalt ÷ pris. apkguiden.se är ett prisjämförelseverktyg och är inte knutet till Systembolaget. 18-årsgräns gäller.</p>
-  <p><a href="/">Topplistan</a> · <a href="/standardglas.html">Vad är ett standardglas?</a> · <a class="footer-shame" href="/samst-apk.html">Sämst APK</a></p>
+  <p><a href="/">Topplistan</a> · <a href="/prisandringar">Prisändringar</a> · <a href="/standardglas.html">Vad är ett standardglas?</a> · <a class="footer-shame" href="/samst-apk.html">Sämst APK</a></p>
 </div></footer>
 </body>
 </html>`;
@@ -427,6 +527,19 @@ h2{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;color:var(--accent);ma
 .footer{margin-top:4rem;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted);padding:1.5rem 0 2.5rem}
 .footer a{color:var(--muted)}
 .footer a.footer-shame{color:#FF6B4A}
+.ph{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.35rem .6rem;max-width:42rem;margin:0 0 1.25rem}
+.ph-y{position:relative;height:8rem;min-width:3.6rem;font-size:.75rem;font-weight:600;color:var(--muted)}
+.ph-y span{position:absolute;right:0;transform:translateY(-50%);white-space:nowrap}
+.ph-plot{position:relative;height:8rem;background:var(--bg-light);border-radius:.9rem}
+.ph-area{position:absolute;top:0;bottom:0;left:.9rem;right:.9rem}
+.ph-area svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.ph-grid{stroke:rgba(244,211,94,.18);stroke-width:1}
+.ph-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+.ph-dot{position:absolute;width:.65rem;height:.65rem;margin:-.325rem 0 0 -.325rem;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--bg-light);cursor:default}
+.ph-dot::after{content:'';position:absolute;inset:-.6rem}
+.ph-x{grid-column:2;display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);padding:0 .9rem}
+.ph-note{font-size:.85rem;color:var(--muted)}
+.ph-more{margin-top:.5rem}
 `;
 
 function renderProductPage(p) {
@@ -499,6 +612,7 @@ function renderProductPage(p) {
 <div class="prose">${productDescription(p)}</div>
 <h2>Hur bra är APK:n?</h2>
 <ul class="prose facts">${comparison(p, subRank, subTotal, median)}</ul>
+${priceHistorySection(p)}
 ${similar.length ? `<h2>Liknande APK bland ${esc(lower(sub))}</h2><div class="cards">${similar.map(renderCard).join('')}</div>` : ''}
 ${best.length ? `<h2>Bäst APK bland ${esc(lower(sub))}</h2><div class="cards">${best.map(renderCard).join('')}</div>` : ''}
 `;
@@ -552,7 +666,20 @@ module.exports = (req, res) => {
   return res.end(renderProductPage(p));
 };
 
-// Exporteras för sitemap/tester
+// Exporteras för sitemap/tester och för api/prisandringar.js (samma utseende)
 module.exports.slugify = slugify;
 module.exports.productPath = productPath;
 module.exports.isIndexable = isIndexable;
+module.exports.page = page;
+module.exports.esc = esc;
+module.exports.kr = kr;
+module.exports.nf = nf;
+module.exports.volumeShort = volumeShort;
+module.exports.dateText = dateText;
+module.exports.monthText = monthText;
+module.exports.pctText = pctText;
+module.exports.priceChanges = priceChanges;
+module.exports.PRODUCTS = PRODUCTS;
+module.exports.HISTORY = HISTORY;
+module.exports.LAST_CHECK = LAST_CHECK;
+module.exports.SITE = SITE;
