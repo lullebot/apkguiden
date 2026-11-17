@@ -202,17 +202,17 @@
     }
     .nav-pill:hover { border-color: var(--yellow); color: var(--yellow); }
     .nav-pill svg { width: 0.95rem; height: 0.95rem; }
-    /* Sämst APK: kanten har samma röd-svarta varningsränder som
-       .hazard-bar överst på samst-apk.html. Tricket: genomskinlig kant,
-       och två bakgrundslager – headerns färg innanför kanten (padding-box)
-       och ränderna under hela knappen (border-box), så att bara kanten
-       visar ränderna. */
+    /* Sämst APK: röd-svart "varningstejp" runt kanten, som randen överst
+       på samst-apk.html. Kanten är streckad i rött och bakgrunden under
+       kanten är svart, så att mellanrummen mellan strecken blir svarta.
+       Strecken följer kanten runt de rundade ändarna. Innanför kanten
+       (padding-box) har knappen headerns färg. */
     .nav-pill-shame {
       color: #FF6B4A;
-      border: 2px solid transparent;
+      border: 2.5px dashed #FF6B4A;
       background:
         linear-gradient(var(--green-dark), var(--green-dark)) padding-box,
-        repeating-linear-gradient(45deg, #FF6B4A 0 5px, #101010 5px 10px) border-box;
+        #101010 border-box;
     }
     .nav-pill-shame:hover { color: #FF3B2F; }
     .nav-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
