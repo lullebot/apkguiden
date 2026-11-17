@@ -123,16 +123,28 @@ MIN_ALCOHOL_PERCENT = 1.0
 # Minsta volym (ml) – filtrera bort konstigheter
 MIN_VOLUME_ML = 50
 
-# Kategorier vi vill behålla (matchar categoryLevel1 i Systembolagets data).
-# OBS: "Mousserande" finns INTE som egen huvudkategori – det ligger som
-# underkategori "Mousserande vin" under Vin. "Cider & Blanddrycker" verkar
-# inte heller dyka upp i denna datadump (är troligen klassad annorlunda).
-KEEP_CATEGORIES = {"Vin", "Öl", "Sprit", "Cider & Blanddrycker"}
+# Kategorier vi vill behålla (matchar categoryLevel1 i Systembolagets data,
+# exakt stavning). OBS: "Mousserande" finns INTE som egen huvudkategori – det
+# ligger som underkategori "Mousserande vin" under Vin. Cider heter
+# "Cider & blanddrycker" med litet b (underkategorier "Cider" och
+# "Blanddryck") – före nov 2026 stod det stort B här, och då föll alla
+# ciders bort. Jämförelsen görs nu utan hänsyn till stora/små bokstäver.
+KEEP_CATEGORIES = {"Vin", "Öl", "Sprit", "Cider & blanddrycker"}
 
 # Mappning för att normalisera kategorinamnet till det vi använder i UI
+# (nycklar i gemener, se category_name()).
 CATEGORY_MAP = {
-    "Cider & Blanddrycker": "Cider",
+    "cider & blanddrycker": "Cider",
 }
+
+# De huvudkategorier sajten visar, i den ordning de visas (UI-namn).
+SITE_CATEGORIES = ("Vin", "Öl", "Sprit", "Cider")
+
+
+def category_name(raw) -> str:
+    """Systembolagets categoryLevel1 → namnet vi använder på sajten."""
+    raw = (raw or "").strip()
+    return CATEGORY_MAP.get(raw.lower(), raw)
 
 
 def extract_details(product: dict) -> dict:
@@ -221,8 +233,7 @@ def transform(product: dict) -> dict:
     if images and isinstance(images, list) and images[0].get("imageUrl"):
         image_url = images[0]["imageUrl"]
 
-    cat = product.get("categoryLevel1") or ""
-    cat = CATEGORY_MAP.get(cat, cat)
+    cat = category_name(product.get("categoryLevel1"))
 
     # Country kan komma som dict eller string beroende på endpoint
     country = product.get("country")
@@ -258,8 +269,8 @@ def is_eligible(product: dict) -> bool:
         return False
     if (product.get("price") or 0) <= 0:
         return False
-    cat = product.get("categoryLevel1") or ""
-    if cat not in KEEP_CATEGORIES:
+    cat = (product.get("categoryLevel1") or "").strip().lower()
+    if cat not in {c.lower() for c in KEEP_CATEGORIES}:
         return False
     # Extra skydd om API:et någon gång skulle strunta i sortimentsfiltret.
     if product.get("assortmentText") not in ASSORTMENTS:
@@ -836,11 +847,14 @@ def main() -> int:
     # som nyinkommen. Vi sätter "new": True endast på de nya produkterna (övriga
     # lämnas utan fältet för att hålla filstorleken nere). Badgen försvinner
     # automatiskt vid nästa körning. Har urvalet ändrats sedan förra körningen
-    # markeras inget (allt vore ju "nytt").
+    # markeras inget (allt vore ju "nytt"), och en kategori som inte fanns på
+    # sajten förra veckan (t.ex. cider när den lades till) räknas inte heller
+    # som nyinkommen.
     new_count = 0
     if prev_by_id and same_selection:
+        prev_categories = {p.get("category") for p in prev_by_id.values()}
         for p in transformed:
-            if p["id"] and str(p["id"]) not in prev_by_id:
+            if p["id"] and str(p["id"]) not in prev_by_id and p.get("category") in prev_categories:
                 p["new"] = True
                 new_count += 1
     print(f"Nyinkomna sedan förra körningen: {new_count:,}", flush=True)
@@ -923,7 +937,7 @@ def main() -> int:
     # by_cat[cat] är redan sorterad (se loopen ovan), så [0] = bäst APK i
     # kategorin. Samma ordning som mini-korten på själva sajten.
     category_leaders = [
-        (cat, by_cat[cat][0]) for cat in ("Vin", "Öl", "Sprit") if by_cat.get(cat)
+        (cat, by_cat[cat][0]) for cat in SITE_CATEGORIES if by_cat.get(cat)
     ]
     update_index_html(final[:SEO_STATIC_TOP_N], category_leaders)
     touch_sitemap_lastmod()
