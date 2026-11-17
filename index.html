@@ -202,9 +202,19 @@
     }
     .nav-pill:hover { border-color: var(--yellow); color: var(--yellow); }
     .nav-pill svg { width: 0.95rem; height: 0.95rem; }
-    /* Sämst APK: samma röda färg som länken i sidfoten och sidan själv. */
-    .nav-pill-shame { color: #FF6B4A; border-color: rgba(255, 107, 74, 0.35); }
-    .nav-pill-shame:hover { color: #FF6B4A; border-color: #FF6B4A; }
+    /* Sämst APK: kanten har samma röd-svarta varningsränder som
+       .hazard-bar överst på samst-apk.html. Tricket: genomskinlig kant,
+       och två bakgrundslager – headerns färg innanför kanten (padding-box)
+       och ränderna under hela knappen (border-box), så att bara kanten
+       visar ränderna. */
+    .nav-pill-shame {
+      color: #FF6B4A;
+      border: 2px solid transparent;
+      background:
+        linear-gradient(var(--green-dark), var(--green-dark)) padding-box,
+        repeating-linear-gradient(45deg, #FF6B4A 0 5px, #101010 5px 10px) border-box;
+    }
+    .nav-pill-shame:hover { color: #FF3B2F; }
     .nav-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
     /* Smala mobiler: båda knapparna ska rymmas bredvid loggan. */
     @media (max-width: 420px) {
