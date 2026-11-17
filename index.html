@@ -183,6 +183,26 @@
     }
     .logo-tld { color: var(--yellow-muted); }
 
+    /* Knapp till /prisandringar uppe till höger (samma stil som
+       "← Hela topplistan" på dryckessidorna). */
+    .nav-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-shrink: 0;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--cream);
+      text-decoration: none;
+      padding: 0.5rem 0.875rem;
+      border-radius: 9999px;
+      border: 1.5px solid rgba(244, 211, 94, 0.25);
+      white-space: nowrap;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .nav-pill:hover { border-color: var(--yellow); color: var(--yellow); }
+    .nav-pill svg { width: 0.95rem; height: 0.95rem; }
+
     .live-indicator {
       display: none;
       align-items: center;
@@ -1380,6 +1400,10 @@
           <span id="liveText">Laddar data…</span>
         </div>
       </div>
+      <a href="/prisandringar" class="nav-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 16-4 4-4-4"></path><path d="M17 20V4"></path><path d="m3 8 4-4 4 4"></path><path d="M7 4v16"></path></svg>
+        Prisändringar
+      </a>
     </div>
   </header>
 
@@ -1409,6 +1433,9 @@
     <div class="mini-cards-eyebrow">Snabbkoll – bäst i varje kategori</div>
     <div class="mini-cards" id="miniCards"></div>
   </section>
+
+  <!-- Osynligt ankare där flik-raden börjar – se scrollToListTop() -->
+  <div id="listAnchor" aria-hidden="true"></div>
 
   <!-- TABS (sticky) -->
   <nav class="tabs-wrap">
@@ -1717,8 +1744,7 @@
         render();
         if (cameFromLink) {
           // Hoppa direkt till listan när man kommer från en dryckessida
-          const tabsWrap = document.querySelector('.tabs-wrap');
-          if (tabsWrap) window.scrollTo({ top: tabsWrap.offsetTop - 1 });
+          scrollToListTop(false);
         }
 
         // Förladda hela sortimentet i bakgrunden för söket. När det är klart
@@ -1967,6 +1993,19 @@
     // ============================================
     // KATEGORI-TABBAR + UNDERKATEGORI-CHIPS
     // ============================================
+
+    // Scrolla till toppen av topplistan (flik-raden överst i fönstret).
+    // .tabs-wrap är position: sticky – när den sitter fast i toppen är dess
+    // offsetTop samma som där man råkar vara scrollad, så att scrolla dit
+    // gjorde ingenting. Därför mäter vi från #listAnchor, som ligger precis
+    // före flik-raden och aldrig flyttar sig.
+    function scrollToListTop(smooth = true) {
+      const anchor = document.getElementById('listAnchor');
+      if (!anchor) return;
+      const top = anchor.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' });
+    }
+
     function renderTabs() {
       const tabsEl = document.getElementById('tabs');
       tabsEl.innerHTML = CATEGORIES.map(cat => `
@@ -1982,7 +2021,7 @@
           writeCategoryToUrl();
           renderTabs();
           render();
-          window.scrollTo({ top: document.querySelector('.tabs-wrap').offsetTop - 1, behavior: 'smooth' });
+          scrollToListTop();
         });
       });
       renderSubtabs();
@@ -2012,6 +2051,7 @@
           writeCategoryToUrl();
           renderSubtabs();
           render();
+          scrollToListTop();
         });
       });
     }
@@ -2091,7 +2131,7 @@
           selectedSubcategory = null;
           renderTabs();
           render();
-          window.scrollTo({ top: document.querySelector('.tabs-wrap').offsetTop - 1, behavior: 'smooth' });
+          scrollToListTop();
         });
       });
     }
