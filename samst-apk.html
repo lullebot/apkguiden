@@ -452,6 +452,7 @@
       const response = await fetch('search-data.json', { cache: 'no-store' });
       const data = await response.json();
       ALL_PRODUCTS = data.products || [];
+      shownUpdated = data.updated || null;
       if (data.updated) {
         document.getElementById('lastUpdated').textContent = new Date(data.updated).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' });
       }
@@ -460,6 +461,30 @@
       document.getElementById('loading').innerHTML = '<div>Kunde inte ladda data. Försök igen senare.</div>';
     }
   }
+
+  // Gammal flik/hemskärmsapp: datan hämtas bara när sidan laddas. När sidan
+  // blir synlig igen kollar vi (högst var 30:e minut) den lilla data.json – som
+  // skrivs i samma veckokörning – och laddar om sidan om den är nyare.
+  // Samma lösning som i index.html.
+  let shownUpdated = null;
+  let lastFreshCheck = Date.now();
+  async function checkForNewerData() {
+    if (document.visibilityState !== 'visible' || !shownUpdated) return;
+    if (Date.now() - lastFreshCheck < 30 * 60 * 1000) return;
+    lastFreshCheck = Date.now();
+    try {
+      const response = await fetch('data.json', { cache: 'no-store' });
+      if (!response.ok) return;
+      const fresh = await response.json();
+      // data.json och search-data.json får tidsstämplar med millisekunders
+      // mellanrum i samma körning – därför "minst en timme nyare".
+      if (fresh.updated && Date.parse(fresh.updated) - Date.parse(shownUpdated) > 60 * 60 * 1000) {
+        location.reload();
+      }
+    } catch (err) { /* offline – vi försöker igen nästa gång */ }
+  }
+  document.addEventListener('visibilitychange', checkForNewerData);
+  window.addEventListener('pageshow', (e) => { if (e.persisted) checkForNewerData(); });
 
   function renderTabs() {
     const tabsEl = document.getElementById('tabs');
