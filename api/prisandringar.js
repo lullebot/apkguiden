@@ -270,11 +270,8 @@ const numWord = (n) => (n >= 0 && n < WORDS.length ? WORDS[n] : nf.format(n));
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const signedKr = (n) => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${kr(Math.abs(n))} kr`;
 const kronor = (n) => (Math.abs(n) === 1 ? 'krona' : 'kronor');
-const link = (p) => `<a href="${esc(productPath(p))}">${esc(p.name)}</a>`;
-function joinAnd(parts) {
-  if (parts.length <= 1) return parts.join('');
-  return parts.slice(0, -1).join(', ') + ' och ' + parts[parts.length - 1];
-}
+// Hårda mellanslag: håller ihop tal och enhet ("2 kr", "6,3 %") på samma rad.
+const nb = (s) => String(s).replace(/ /g, '\u00a0');
 function shareText(n, total) {
   if (!total) return '';
   const pct = (n / total) * 100;
@@ -309,8 +306,13 @@ function tornEdge(teeth, depth) {
   return `polygon(${pts.join(',')})`;
 }
 function receiptHtml(r) {
-  const rows = r.catList.filter((c) => c.tracked).map((c) => `
-      <div class="rc-row rc-cat"><span>${esc(c.name)}</span><span class="rc-cnt">${UP_ICON}${nf.format(c.up)} ${DOWN_ICON}${nf.format(c.down)}</span><span class="rc-amt">${signedKr(c.net)}</span></div>`).join('');
+  const cats = r.catList.filter((c) => c.tracked);
+  // Kategoriraderna är en tabell med fyra kolumner: namn, dyrare, billigare
+  // och netto. Sifferrutorna är lika breda, så att talen står rakt under
+  // varandra och under sin rubrik.
+  const width = (key) => Math.max(1, ...cats.map((c) => nf.format(c[key]).length));
+  const rows = cats.map((c) => `
+      <span>${esc(c.name)}</span><span class="rc-n">${UP_ICON}<b>${nf.format(c.up)}</b></span><span class="rc-n rc-n-down">${DOWN_ICON}<b>${nf.format(c.down)}</b></span><span class="rc-amt">${signedKr(c.net)}</span>`).join('');
   const label = `Kvitto för en av varje dryck: ${nf.format(r.beforeR)} kronor före prisändringen, ${nf.format(r.afterR)} kronor efter.`;
   return `<aside class="rc-wrap" aria-label="${esc(label)}">
   <div class="rc-slot" aria-hidden="true"></div>
@@ -320,8 +322,8 @@ function receiptHtml(r) {
     <p class="rc-note">${nf.format(r.tracked)} drycker i fasta sortimentet</p>
     <div class="rc-rule"></div>
     <div class="rc-row"><span>Före prisändringen</span><span class="rc-amt">${nf.format(r.beforeR)} kr</span></div>
-    <div class="rc-cats">
-      <div class="rc-row rc-head"><span></span><span class="rc-cnt">${UP_ICON}dyrare ${DOWN_ICON}billigare</span><span></span></div>${rows}
+    <div class="rc-cats" style="--wu:${width('up')}ch;--wd:${width('down')}ch">
+      <span></span><span class="rc-h">${UP_ICON}dyrare</span><span class="rc-h">${DOWN_ICON}billigare</span><span></span>${rows}
     </div>
     <div class="rc-rule"></div>
     <div class="rc-row"><span>Efter prisändringen</span><span class="rc-amt">${nf.format(r.afterR)} kr</span></div>
@@ -388,9 +390,9 @@ function insightsHtml(r) {
     let extra = '';
     if (ups.length >= 10) {
       const limit = [1, 2, 5, 10, 20, 50].find((t) => ups.filter((e) => e.diff <= t).length >= ups.length / 2);
-      if (limit) extra = ` ${nf.format(ups.filter((e) => e.diff <= limit).length)} av ${nf.format(ups.length)} höjningar var på högst ${limit} kr.`;
+      if (limit) extra = ` ${nf.format(ups.filter((e) => e.diff <= limit).length)} av ${nf.format(ups.length)} höjningar var på högst ${nb(`${limit} kr`)}.`;
     }
-    out.push({ title: `Vanligaste ändringen: ${signedKr(diff)}`, text: `${nf.format(count)} drycker fick exakt den ändringen.${extra}` });
+    out.push({ title: `Vanligaste ändringen: ${nb(signedKr(diff))}`, text: `${nf.format(count)} drycker fick exakt den ändringen.${extra}` });
   }
   // 2. Höjningar mot sänkningar.
   if (r.up >= 5 && r.down >= 5) {
@@ -398,7 +400,7 @@ function insightsHtml(r) {
     let title = 'Så stora var ändringarna';
     if (m.downKr >= m.upKr * 1.5 && r.down < r.up) title = 'Sänkningarna var färre men större';
     else if (m.upKr >= m.downKr * 1.5 && r.up < r.down) title = 'Höjningarna var färre men större';
-    out.push({ title, text: `En typisk sänkning var på ${kr(round2(m.downKr))} kr (${pctText(m.downPct)}), en typisk höjning på ${kr(round2(m.upKr))} kr (${pctText(m.upPct)}).` });
+    out.push({ title, text: `En typisk sänkning var på ${nb(`${kr(round2(m.downKr))} kr (${pctText(m.downPct)})`)}, en typisk höjning på ${nb(`${kr(round2(m.upKr))} kr (${pctText(m.upPct)})`)}.` });
   }
   // 3. Dryckestypen där störst andel fick nytt pris.
   const top = INFO.subList[0];
@@ -406,25 +408,25 @@ function insightsHtml(r) {
   if (top && top.share >= overall * 1.5 && top.up + top.down >= 8) {
     out.push({
       title: `Mest berört: ${top.name.toLowerCase()}`,
-      text: `${nf.format(top.up + top.down)} av ${nf.format(top.tracked)} fick nytt pris (${shareText(top.up + top.down, top.tracked)}): ${nf.format(top.up)} dyrare och ${nf.format(top.down)} billigare. I hela sortimentet var andelen ${shareText(r.n, r.tracked)}.`,
+      text: `${nf.format(top.up + top.down)} av ${nf.format(top.tracked)} fick nytt pris (${nb(shareText(top.up + top.down, top.tracked))}): ${nf.format(top.up)} dyrare och ${nf.format(top.down)} billigare. I hela sortimentet var andelen ${nb(shareText(r.n, r.tracked))}.`,
     });
   }
-  // 4. Topp 20 på APK-listorna.
+  // 4. Topp 20 på APK-listorna: en kolumn per kategori med vilka som kom in
+  // och vilka som åkte ut, och deras placering före och nu.
+  let wide = '';
   if (INFO.top.length) {
-    const swaps = INFO.top.reduce((s, t) => s + t.entered.length, 0);
-    const parts = INFO.top.map((t) => {
-      if (!t.entered.length && !t.left.length) return `${esc(t.name)}: samma topp 20 som förut${t.changed ? `, fast ${numWord(t.changed)} av dem fick nytt pris` : ''}.`;
-      const bits = [];
-      if (t.entered.length) bits.push(`${joinAnd(t.entered.map(link))} tog sig in`);
-      if (t.left.length) bits.push(`${joinAnd(t.left.map(link))} åkte ut`);
-      return `${esc(t.name)}: ${bits.join(', ')}.`;
-    });
+    const swaps = INFO.top.reduce((n, t) => n + t.entered.length, 0);
+    const row = (p) => `<li><a href="${esc(productPath(p))}">${esc(p.name)}</a><span class="num">${nf.format(INFO.rb.get(p.id))} → <strong>${nf.format(p.rank)}</strong></span></li>`;
+    const list = (label, ps) => (ps.length ? `<p class="pc-swap-l">${label}</p><ul>${ps.map(row).join('')}</ul>` : '');
+    const cols = INFO.top.map((t) => `<div class="pc-swap"><h4>${esc(t.name)}</h4>${t.entered.length || t.left.length
+      ? list('In i topp 20', t.entered) + list('Ut ur topp 20', t.left)
+      : `<p>Samma topp 20 som förut.${t.changed ? ` ${t.changed === 1 ? 'En' : cap(numWord(t.changed))} av dem fick nytt pris.` : ''}</p>`}</div>`).join('');
     const title = swaps === 0 ? 'Topp 20 på APK-listorna står kvar' : swaps === 1 ? 'Ett byte i topp 20 på APK-listorna' : `${cap(numWord(swaps))} byten i topp 20 på APK-listorna`;
-    out.push({ title, text: parts.join(' ') });
+    wide = `<article class="pc-find pc-find-wide"><h3>${esc(title)}</h3>${swaps ? '<p class="pc-swap-note">Siffrorna är placeringen i kategorin före och nu.</p>' : ''}<div class="pc-swaps" style="--cols:${INFO.top.length === 4 ? 2 : Math.min(INFO.top.length, 3)}">${cols}</div></article>`;
   }
-  if (!out.length) return '';
+  if (!out.length && !wide) return '';
   return `<h2>Det här sticker ut</h2>
-<div class="pc-finds">${out.map((f) => `<article class="pc-find"><h3>${esc(f.title)}</h3><p>${f.text}</p></article>`).join('')}</div>`;
+<div class="pc-finds">${out.map((f) => `<article class="pc-find"><h3>${esc(f.title)}</h3><p>${f.text}</p></article>`).join('')}${wide}</div>`;
 }
 
 // ---------- Listor ----------
@@ -898,12 +900,13 @@ const EXTRA_CSS = `
 .rc-rule{border-top:1.5px dashed rgba(16,38,31,.5);margin:.65rem 0}
 .rc-row{display:flex;justify-content:space-between;gap:.75rem}
 .rc-amt{white-space:nowrap;text-align:right}
-.rc-cats{margin-top:.5rem}
-.rc-cats .rc-row{display:grid;grid-template-columns:3.4rem minmax(0,1fr) auto;gap:.5rem}
-.rc-head{font-size:.7rem;opacity:.75}
-.rc-cnt{white-space:nowrap}
+.rc-cats{display:grid;grid-template-columns:auto auto auto minmax(0,1fr);column-gap:.75rem;align-items:baseline;margin-top:.5rem}
+.rc-h{font-size:.7rem;opacity:.75;white-space:nowrap}
+.rc-n{white-space:nowrap}
+.rc-n b{display:inline-block;min-width:var(--wu,2ch);text-align:right;font-weight:400}
+.rc-n-down b{min-width:var(--wd,2ch)}
+@media(max-width:350px){.rc{font-size:.68rem}}
 .rc .pc-ico{fill:var(--ink);width:.5rem;height:.5rem;margin-right:.2rem}
-.rc-cnt .pc-ico.down{margin-left:.45rem}
 .rc-total{font-size:1.15rem;font-weight:700}
 .rc-foot{font-size:.72rem;opacity:.8}
 @media(prefers-reduced-motion:reduce){.rc-anim{animation:none}}
@@ -966,12 +969,24 @@ const EXTRA_CSS = `
 .sh-tip.pin a{display:inline-block}
 .sh-tip.pin .sh-tip-hint{display:none}
 @media(prefers-reduced-motion:reduce){.sh-grid i{transition:none}}
-.pc-finds{display:grid;grid-template-columns:minmax(0,1fr);gap:1.75rem 2.5rem}
-@media(min-width:760px){.pc-finds{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.pc-finds{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(15rem,100%),1fr));gap:1.75rem 2.5rem}
+.pc-find-wide{grid-column:1/-1}
 .pc-find{border-top:2px solid var(--accent);padding-top:.85rem}
-.pc-find h3{font-size:1.2rem;font-weight:800;letter-spacing:-.015em;line-height:1.2;color:var(--cream);margin:0 0 .4rem}
-.pc-find p{margin:0;font-size:.95rem;line-height:1.5}
+.pc-find h3{font-size:1.2rem;font-weight:800;letter-spacing:-.015em;line-height:1.2;color:var(--cream);margin:0 0 .4rem;text-wrap:balance}
+.pc-find p{margin:0;font-size:.95rem;line-height:1.5;text-wrap:pretty}
 .pc-find a{color:var(--cream)}
+.pc-find .pc-swap-note{font-size:.85rem;color:var(--muted)}
+.pc-swaps{display:grid;grid-template-columns:minmax(0,1fr);gap:1.4rem 2.5rem;margin-top:.9rem}
+@media(min-width:760px){.pc-swaps{grid-template-columns:repeat(var(--cols,3),minmax(0,1fr))}}
+.pc-swap h4{font-size:1.05rem;font-weight:800;color:var(--accent);margin:0 0 .3rem}
+.pc-find .pc-swap-l{font-size:.78rem;color:var(--muted);margin-top:.7rem}
+.pc-swap h4+.pc-swap-l{margin-top:0}
+.pc-swap ul{list-style:none;margin:0;padding:0}
+.pc-swap li{display:flex;justify-content:space-between;align-items:baseline;gap:.9rem;padding:.4rem 0;border-bottom:1px solid var(--line);font-size:.92rem;line-height:1.3}
+.pc-swap li a{min-width:0;font-weight:600;text-decoration:none}
+.pc-swap li a:hover{color:var(--accent)}
+.pc-swap li span{white-space:nowrap;color:var(--muted)}
+.pc-swap li strong{color:var(--cream)}
 .pc-under{margin:-.5rem 0 1rem;font-size:.95rem;color:var(--muted);max-width:38rem}
 .pc-cols{display:grid;grid-template-columns:minmax(0,1fr);gap:0 1.5rem}
 @media(min-width:900px){.pc-cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
