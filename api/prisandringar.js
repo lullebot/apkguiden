@@ -35,7 +35,7 @@ const catOf = (p) => p.category || 'Övrigt';
 // (minst BIG_PCT procent) – mörkare betyder alltså mer. Den ljusa nyansen
 // används också till pilarna och staplarna, där den syns bäst mot det gröna.
 // Alla par är kontrollerade mot varandra och mot bakgrunden (se README).
-const COLORS = { up: '#FEAA7A', upDeep: '#E6443D', dn: '#8BDFFA', dnDeep: '#1881E1', flat: '#384640', paper: '#FBF6E1', ink: '#10261F' };
+const COLORS = { up: '#FE8D6F', upDeep: '#DF2414', dn: '#5ACDF9', dnDeep: '#1881E1', flat: '#384640', paper: '#FBF6E1', ink: '#10261F' };
 
 // ---------- Prishistorik ----------
 const HP = HISTORY.products || {};
