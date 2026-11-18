@@ -29,10 +29,13 @@ const CATEGORY_ORDER = ['Vin', 'Öl', 'Sprit', 'Cider'];
 const catIndex = (c) => { const i = CATEGORY_ORDER.indexOf(c); return i < 0 ? 99 : i; };
 const catOf = (p) => p.category || 'Övrigt';
 
-// Färgerna för dyrare/billigare. Korall mot blått (inte rött mot grönt) för
-// att paren ska gå att skilja åt även med röd-grön färgblindhet; alla par är
-// kontrollerade mot varandra och mot bakgrunden (se README).
-const COLORS = { up: '#FE8D6F', upLo: '#B45244', dn: '#5ACDF9', dnLo: '#2C7FB1', flat: '#384640', paper: '#FBF6E1', ink: '#10261F' };
+// Färgerna för dyrare/billigare: rött mot blått (inte rött mot grönt), så
+// att de går att skilja åt även med röd-grön färgblindhet. Varje håll har två
+// nyanser: en ljus för små ändringar och en mörkare, starkare för stora
+// (minst BIG_PCT procent) – mörkare betyder alltså mer. Den ljusa nyansen
+// används också till pilarna och staplarna, där den syns bäst mot det gröna.
+// Alla par är kontrollerade mot varandra och mot bakgrunden (se README).
+const COLORS = { up: '#FEAA7A', upDeep: '#E6443D', dn: '#8BDFFA', dnDeep: '#1881E1', flat: '#384640', paper: '#FBF6E1', ink: '#10261F' };
 
 // ---------- Prishistorik ----------
 const HP = HISTORY.products || {};
@@ -371,7 +374,7 @@ function shelfHtml(r) {
     <li><i class="d1"></i><i class="d2"></i>Billigare</li>
     <li><i></i>Oförändrat</li>
     <li><i class="n"></i>Ny sedan dess</li>
-    <li class="sh-mute">Ljusare ruta: minst ${BIG_PCT} %</li>
+    <li class="sh-mute">Mörkare ruta: minst ${BIG_PCT} %</li>
   </ul>
   <div class="sh-body" id="shBody">${cats}
     <div class="sh-tip" id="shTip" hidden></div>
@@ -824,8 +827,8 @@ function pngChunk(type, data) {
 }
 function buildPng(r) {
   const W = 1200, H = 630, M = 60;
-  const palette = ['#0A2D22', '#F5EBC4', '#D9B842', COLORS.up, COLORS.upLo, COLORS.flat, COLORS.dnLo, COLORS.dn, '#5E6F66'];
-  const BG = 0, CREAM = 1, GOLD = 2, UP = 3, UPLO = 4, FLAT = 5, DNLO = 6, DN = 7, EDGE = 8;
+  const palette = ['#0A2D22', '#F5EBC4', '#D9B842', COLORS.up, COLORS.upDeep, COLORS.flat, COLORS.dnDeep, COLORS.dn, '#5E6F66'];
+  const BG = 0, CREAM = 1, GOLD = 2, UP = 3, UPDEEP = 4, FLAT = 5, DNDEEP = 6, DN = 7, EDGE = 8;
   const px = new Uint8Array(W * H);
   const rect = (x, y, w, h, c) => {
     for (let yy = Math.max(0, y); yy < Math.min(H, y + h); yy++) px.fill(c, yy * W + Math.max(0, x), yy * W + Math.min(W, x + w));
@@ -842,9 +845,9 @@ function buildPng(r) {
   text('apkguiden.se', M, 56, 4, GOLD);
   const month = monthText(r.month);
   text(month, W - M - textWidth(month, 4), 56, 4, GOLD);
-  let x = text(String(r.up), M, 130, 10, UP);
+  let x = text(String(r.up), M, 130, 10, UPDEEP);
   text('dyrare', x + 20, 130, 10, CREAM);
-  x = text(String(r.down), M, 226, 10, DN);
+  x = text(String(r.down), M, 226, 10, DNDEEP);
   text('billigare', x + 20, 226, 10, CREAM);
   // Hyllan: alla drycker i ett svep, dyrare först och billigare sist.
   const st = (p) => r.state.get(p.id);
@@ -859,7 +862,7 @@ function buildPng(r) {
     const s = st(p), sx = x0 + (i % cols) * pitch, sy = top + Math.floor(i / cols) * pitch;
     if (s.k === 'n') { rect(sx, sy, size, size, EDGE); rect(sx + 1, sy + 1, size - 2, size - 2, BG); return; }
     const big = Math.abs(s.pct || 0) >= BIG_PCT;
-    rect(sx, sy, size, size, s.k === 'u' ? (big ? UP : UPLO) : s.k === 'd' ? (big ? DN : DNLO) : FLAT);
+    rect(sx, sy, size, size, s.k === 'u' ? (big ? UPDEEP : UP) : s.k === 'd' ? (big ? DNDEEP : DN) : FLAT);
   });
   // Koda som palett-PNG (1 byte per pixel).
   const raw = Buffer.alloc((W + 1) * H);
@@ -876,7 +879,7 @@ function buildPng(r) {
 
 // ---------- Utseende ----------
 const EXTRA_CSS = `
-:root{--up:${COLORS.up};--up-lo:${COLORS.upLo};--dn:${COLORS.dn};--dn-lo:${COLORS.dnLo};--flat:${COLORS.flat};--paper:${COLORS.paper};--ink:${COLORS.ink}}
+:root{--up:${COLORS.up};--up-deep:${COLORS.upDeep};--dn:${COLORS.dn};--dn-deep:${COLORS.dnDeep};--flat:${COLORS.flat};--paper:${COLORS.paper};--ink:${COLORS.ink}}
 .pc-ico{width:.6rem;height:.6rem;flex-shrink:0;margin-right:.3rem;vertical-align:baseline}
 .pc-ico.up{fill:var(--up)}
 .pc-ico.down{fill:var(--dn)}
@@ -949,10 +952,10 @@ const EXTRA_CSS = `
 .sh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--sq),1fr));gap:2px;touch-action:pan-y;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .sh-grid i{display:block;aspect-ratio:1;min-height:var(--sq);border-radius:1.5px;background:var(--flat);transition:background-color .35s ease,opacity .2s ease}
 @supports (aspect-ratio:1){.sh-grid i{min-height:0}}
-.sh i.u1{background:var(--up-lo)}
-.sh i.u2{background:var(--up)}
-.sh i.d1{background:var(--dn-lo)}
-.sh i.d2{background:var(--dn)}
+.sh i.u1{background:var(--up)}
+.sh i.u2{background:var(--up-deep)}
+.sh i.d1{background:var(--dn)}
+.sh i.d2{background:var(--dn-deep)}
 .sh i.n{background:transparent;box-shadow:inset 0 0 0 1px rgba(245,235,196,.3)}
 .sh-body.searching .sh-grid i{opacity:.16}
 .sh-body.searching .sh-grid i.hit{position:relative;opacity:1;outline:1.5px solid var(--cream);outline-offset:1px}
