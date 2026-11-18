@@ -108,9 +108,16 @@ apkguiden.se → laddar färsk data
 `price-history.json` har en rad per dryck och prisändring: första gången vi såg drycken och varje nytt pris därefter (datum = den veckokörning då ändringen upptäcktes). Den uppdateras varje vecka av `update-data.py`. Historiken maj–nov 2026 återskapades ur repots git-historik (veckovisa `search-data.json`).
 
 - Varje dryckessida (`api/dryck.js`) visar dryckens prishistorik med en liten graf.
-- `/prisandringar` (`api/prisandringar.js`) visar senaste prisomgången (en månad med minst 25 ändringar): antal dyrare/billigare, per kategori, största höjningarna och sänkningarna och hela listan. Sidan uppdaterar sig själv efter varje veckokörning.
+- `/prisandringar` (`api/prisandringar.js`) visar senaste prisomgången (en månad där minst 25 drycker fick nytt pris). Allt på sidan – även rubriksiffrorna och texterna – räknas fram ur `price-history.json`, så den uppdaterar sig själv efter varje veckokörning och byter själv till nästa omgång (mars/september). Sidan består av:
+  - **Kvittot "En av varje"**: vad det kostar att köpa en av varje dryck före och efter omgången.
+  - **Hela hyllan**: en ruta per dryck (korall = dyrare, blå = billigare, grå = oförändrad, tom ruta = ny). Går att söka i och ordna om efter pris eller APK.
+  - **Det här sticker ut** och **Klättrade mest på APK-listan**: fynd som skrivs automatiskt och bara visas när siffrorna håller för dem.
+  - Största höjningarna/sänkningarna och hela listan (sökbar).
+- En omgång jämför priset före månadens första dag med priset vid månadens slut. Bara drycker som vi hade ett pris på före månaden räknas; nyare drycker visas som "nya" och ingår inte i procent eller summor.
+- Samma funktion svarar med sidans underlag i andra format: `/api/prisandringar?format=csv` (alla prisändringar, öppnas direkt i Excel), `?format=json` (alla drycker, används av hyllan) och `?format=png` (delningsbilden som syns när någon länkar sidan i t.ex. Reddit eller Messenger – den ritas om med nya siffror av sig själv).
+- Färgerna för dyrare/billigare är korall och blått i stället för rött och grönt, så att de går att skilja åt även med röd-grön färgblindhet (paren är kontrollerade mot varandra och mot bakgrunden).
 - Systembolaget återanvänder ibland ett artikelnummer för en helt annan dryck. Byter namn eller volym för ett nummer börjar historiken om, så det inte ser ut som en prisändring.
-- Ändringar som upptäcks efter att en dryck saknats några veckor har osäkert datum och räknas inte in i prisomgångarna.
+- Ändringar som upptäcks efter att en dryck saknats några veckor har osäkert datum. De räknas till den månad då de upptäcktes.
 
 ### Justera vilka produkter som visas
 
