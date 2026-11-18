@@ -358,6 +358,34 @@ function comparison(p, subRank, subTotal, median) {
 // ---------- Prishistorik på dryckessidan ----------
 // En liten trappstegsgraf (HTML + SVG, skalar med skärmbredden) plus samma
 // uppgifter som text – texten är "tabellvyn" för den som inte ser grafen.
+// Dagens datum i Sverige som "ÅÅÅÅ-MM-DD".
+function todayIso() {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Stockholm' }).format(new Date());
+}
+
+// Datumetiketter under grafen. Prisändringarna är viktigast och placeras
+// först (nyaste först), sedan startdatum och dagens datum. En etikett som
+// skulle krocka med en redan placerad hoppas över (alla datum står ändå i
+// listan under grafen). W = ungefärlig bredd i procent på en bred skärm –
+// på smala skärmar mäter skriptet under grafen de riktiga etiketterna och
+// döljer de mindre viktiga som ändå krockar.
+function placeLabels(items) {
+  const W = 14, GAP = 2;
+  const placed = [];
+  for (const it of items) {
+    const lo = it.align === 'start' ? it.x : it.align === 'end' ? it.x - W : it.x - W / 2;
+    const hi = lo + W;
+    if (placed.some((q) => lo < q.hi + GAP && q.lo < hi + GAP)) continue;
+    placed.push({ ...it, lo, hi });
+  }
+  return placed;
+}
+function axisLabels(placed) {
+  return placed.map((it) =>
+    `<span class="ph-xl ${it.align}${it.cls ? ' ' + it.cls : ''}" style="left:${it.x.toFixed(2)}%"${it.attr || ''}>${esc(it.text)}</span>`
+  ).join('');
+}
+
 function priceChart(h, end) {
   const pts = h.p;
   const t0 = Date.parse(pts[0][0]);
@@ -377,7 +405,34 @@ function priceChart(h, end) {
     const label = `${i === 0 ? 'Första kollen' : 'Nytt pris'} ${dateText(x[0])}: ${kr(x[1])} kr${change}`;
     return `<span class="ph-dot" style="left:${xPct(x[0]).toFixed(2)}%;top:${yPct(x[1]).toFixed(2)}%" title="${esc(label)}"></span>`;
   }).join('');
-  const aria = 'Prishistorik: ' + pts.map((x) => `${kr(x[1])} kr från ${dateText(x[0])}`).join(', ') + '.';
+  // Streckad linje från varje prisändring ner till dess datum under grafen.
+  const guides = pts.slice(1).map((x, j) => {
+    const low = Math.max(yPct(x[1]), yPct(pts[j][1]));
+    return `<span class="ph-guide" style="left:${xPct(x[0]).toFixed(2)}%;top:${low.toFixed(2)}%"></span>`;
+  }).join('');
+  const align = (x) => (x < 12 ? 'start' : x > 88 ? 'end' : 'mid');
+  // Bara första datumet har årtal; senare datum får årtal bara om de ligger
+  // ett annat år. Kortare etiketter = alla får plats även på mobilen.
+  const y0 = pts[0][0].slice(0, 4);
+  const axisDate = (iso) => (iso.slice(0, 4) === y0 ? dateText(iso).replace(/ \d{4}$/, '') : dateText(iso));
+  const labelItems = pts.slice(1).reverse().map((x) => {
+    const xp = xPct(x[0]);
+    return { x: xp, align: align(xp), text: axisDate(x[0]), cls: 'chg' };
+  });
+  labelItems.push({ x: 0, align: 'start', text: dateText(pts[0][0]), first: true });
+  // Dagens datum. Sidan kan ligga i Vercels cache en tid, så ett litet skript
+  // längre ner byter till besökarens dagens datum (data-today, data-y0 =
+  // första datumets år, så att årtalet bara visas om det är ett annat år).
+  const todayItem = { x: 100, align: 'end', text: axisDate(end), attr: ` data-today data-y0="${y0}"` };
+  labelItems.push(todayItem);
+  let placed = placeLabels(labelItems);
+  // Fick startdatumet (det enda med årtal) inte plats? Då får dagens datum årtal.
+  if (!placed.some((it) => it.first)) {
+    todayItem.text = dateText(end);
+    todayItem.attr = ' data-today data-y0=""';
+    placed = placeLabels(labelItems);
+  }
+  const aria = 'Prishistorik: ' + pts.map((x) => `${kr(x[1])} kr från ${dateText(x[0])}`).join(', ') + ', till i dag.';
   return `<div class="ph" role="img" aria-label="${esc(aria)}">
   <div class="ph-y" aria-hidden="true"><span style="top:${yPct(max).toFixed(2)}%">${kr(max)} kr</span>${min !== max ? `<span style="top:${yPct(min).toFixed(2)}%">${kr(min)} kr</span>` : ''}</div>
   <div class="ph-plot"><div class="ph-area">
@@ -385,17 +440,28 @@ function priceChart(h, end) {
       <line class="ph-grid" x1="0" x2="1000" y1="${yPct(max).toFixed(2)}" y2="${yPct(max).toFixed(2)}" vector-effect="non-scaling-stroke"/>
       ${min !== max ? `<line class="ph-grid" x1="0" x2="1000" y1="${yPct(min).toFixed(2)}" y2="${yPct(min).toFixed(2)}" vector-effect="non-scaling-stroke"/>` : ''}
       <path class="ph-line" d="${path}" vector-effect="non-scaling-stroke"/>
-    </svg>${dots}
+    </svg>${guides}${dots}
   </div></div>
-  <div class="ph-x" aria-hidden="true"><span>${esc(dateText(pts[0][0]))}</span><span>${esc(dateText(end))}</span></div>
-</div>`;
+  <div class="ph-x" aria-hidden="true"><div class="ph-x-in">${axisLabels(placed)}</div></div>
+</div>
+<script>(function(){
+  // 1) Dagens datum längst till höger (sidan kan komma från Vercels cache).
+  var m=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'],d=new Date();
+  document.querySelectorAll('[data-today]').forEach(function(e){var y=d.getFullYear();e.textContent=d.getDate()+' '+m[d.getMonth()]+(String(y)===e.getAttribute('data-y0')?'':' '+y);});
+  // 2) Dölj datumetiketter som krockar. De står i viktighetsordning
+  //    (prisändringar först), så en senare etikett får vika för en tidigare.
+  function fit(){document.querySelectorAll('.ph-x-in').forEach(function(box){var kept=[];box.querySelectorAll('.ph-xl').forEach(function(e){e.style.visibility='';var r=e.getBoundingClientRect();if(kept.some(function(k){return r.left<k.right+8&&k.left<r.right+8;}))e.style.visibility='hidden';else kept.push(r);});});}
+  fit();window.addEventListener('resize',fit);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
+})();</script>`;
 }
 
 function priceHistorySection(p) {
   const h = (HISTORY.products || {})[String(p.id)];
   if (!h || !h.p || !h.p.length) return '';
   const since = h.p[0][0];
-  const end = LAST_CHECK && LAST_CHECK > since ? LAST_CHECK : (h.s || since);
+  // Grafen går fram till i dag (priset gäller tills nästa ändring).
+  const today = todayIso();
+  const end = today > since ? today : since;
   const changes = priceChanges(p.id);
   let out = '<h2>Prishistorik</h2>';
   if (p.seen) {
@@ -546,7 +612,13 @@ h2{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;color:var(--accent);ma
 .ph-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
 .ph-dot{position:absolute;width:.65rem;height:.65rem;margin:-.325rem 0 0 -.325rem;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--bg-light);cursor:default}
 .ph-dot::after{content:'';position:absolute;inset:-.6rem}
-.ph-x{grid-column:2;display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);padding:0 .9rem}
+.ph-x{grid-column:2;position:relative;height:1.15rem}
+.ph-x-in{position:absolute;top:0;bottom:0;left:.9rem;right:.9rem}
+.ph-xl{position:absolute;top:0;white-space:nowrap;font-size:.75rem;color:var(--muted)}
+.ph-xl.mid{transform:translateX(-50%)}
+.ph-xl.end{transform:translateX(-100%)}
+.ph-xl.chg{color:var(--accent);font-weight:600}
+.ph-guide{position:absolute;bottom:0;border-left:1px dashed rgba(244,211,94,.45)}
 .ph-note{font-size:.85rem;color:var(--muted)}
 .ph-more{margin-top:.5rem}
 `;
