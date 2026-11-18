@@ -2254,7 +2254,11 @@
     // ============================================
     // TOPPLISTA
     // ============================================
-    function renderTopList() {
+    // opts.appendFrom: anropas från "Visa fler". Då läggs bara de nya raderna
+    // till under de befintliga – resten av listan rörs inte. (Förut ritades
+    // hela listan om, och eftersom varje rad tonas in från osynlig blinkade
+    // allt bort en halv sekund.)
+    function renderTopList(opts = {}) {
       // Återställ rubriker (kan ha ändrats av sökläget)
       document.querySelector('.section-eyebrow').textContent = 'Topplista';
       document.querySelector('.sort-indicator').textContent = 'Sorterat efter APK ↓';
@@ -2320,24 +2324,36 @@
       // Podium
       const podium = top.slice(0, 3);
       const rest = top.slice(3);
-      if (podium.length === 3) {
-        podiumEl.style.display = 'grid';
-        podiumEl.innerHTML = podium.map((p, i) => renderPodiumCard(p, i + 1, i)).join('');
+      const appendFrom = opts.appendFrom;
+      const canAppend = appendFrom && podium.length === 3
+        && podiumEl.style.display !== 'none' && listEl.style.display !== 'none'
+        && listEl.children.length === appendFrom - 3;
+      if (canAppend) {
+        // "Visa fler": lägg bara till de nya raderna under de befintliga.
+        // index i (0, 1, 2 …) ger en kort inton som börjar direkt för den
+        // nya omgången; podiet och raderna ovanför rörs inte.
+        listEl.insertAdjacentHTML('beforeend',
+          top.slice(appendFrom).map((p, i) => renderProductRow(p, appendFrom + i + 1, i)).join(''));
       } else {
-        podiumEl.style.display = 'none';
-      }
+        if (podium.length === 3) {
+          podiumEl.style.display = 'grid';
+          podiumEl.innerHTML = podium.map((p, i) => renderPodiumCard(p, i + 1, i)).join('');
+        } else {
+          podiumEl.style.display = 'none';
+        }
 
-      // Lista
-      if (rest.length > 0) {
-        listEl.style.display = 'flex';
-        listEl.innerHTML = rest.map((p, i) => renderProductRow(p, i + 4, i + 3)).join('');
-      } else if (podium.length < 3) {
-        // Färre än 3 produkter, visa allt som rader
-        listEl.style.display = 'flex';
-        listEl.innerHTML = top.map((p, i) => renderProductRow(p, i + 1, i)).join('');
-        podiumEl.style.display = 'none';
-      } else {
-        listEl.style.display = 'none';
+        // Lista
+        if (rest.length > 0) {
+          listEl.style.display = 'flex';
+          listEl.innerHTML = rest.map((p, i) => renderProductRow(p, i + 4, i + 3)).join('');
+        } else if (podium.length < 3) {
+          // Färre än 3 produkter, visa allt som rader
+          listEl.style.display = 'flex';
+          listEl.innerHTML = top.map((p, i) => renderProductRow(p, i + 1, i)).join('');
+          podiumEl.style.display = 'none';
+        } else {
+          listEl.style.display = 'none';
+        }
       }
 
       // "Visa fler" – bara synlig om det finns fler produkter i det aktuella
@@ -2348,8 +2364,9 @@
         loadMoreWrap.style.display = 'flex';
         loadMoreBtn.textContent = 'Visa fler';
         loadMoreBtn.onclick = () => {
+          const appendFrom = topListVisibleCount;
           topListVisibleCount += TOP_LIST_PAGE_SIZE;
-          renderTopList();
+          renderTopList({ appendFrom });
         };
       } else {
         loadMoreWrap.style.display = 'none';
