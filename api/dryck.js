@@ -481,7 +481,8 @@ function priceHistorySection(p) {
   return out;
 }
 
-function page({ title, metaDescription, canonical, jsonLd, body, noindex, ogImage, extraCss }) {
+// ogLarge: sidan har en egen bred delningsbild (1200×630) i ogImage.
+function page({ title, metaDescription, canonical, jsonLd, body, noindex, ogImage, ogLarge, extraCss }) {
   return `<!DOCTYPE html>
 <html lang="sv">
 <head>
@@ -501,8 +502,9 @@ ${noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" hr
 <meta property="og:description" content="${esc(metaDescription)}">
 ${canonical ? `<meta property="og:url" content="${esc(canonical)}">` : ''}
 <meta property="og:image" content="${esc(ogImage || SITE + '/icon-512.png')}">
+${ogLarge ? '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">' : ''}
 <meta property="og:locale" content="sv_SE">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="${ogLarge ? 'summary_large_image' : 'summary'}">
 ${jsonLd ? jsonLd.map((j) => `<script type="application/ld+json">${JSON.stringify(j).replace(/</g, '\\u003c')}</script>`).join('\n') : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
